@@ -12,7 +12,7 @@ make
 
 ### Missing Codes
 
-- Merge Sort: StarPU, OpenMP
+- Merge Sort: StarPU, OpenMP, GPU
 - Strassen-Winograd: StarPU, OpenMP, MKL, CUBLAS
 - Hadamard: HRPF
 
