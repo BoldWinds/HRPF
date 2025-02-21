@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(HRPA LANGUAGES CXX CUDA)
+project(hrpf LANGUAGES CXX CUDA)
 
 # -------------------------------
 # 设置 C++ 和 CUDA 标准
@@ -67,11 +67,11 @@ file(GLOB_RECURSE CUDA_SOURCES ${CMAKE_SOURCE_DIR}/src/*.cu)
 set(ALL_SOURCES ${CPP_SOURCES} ${CUDA_SOURCES})
 
 # -------------------------------
-# 生成共享库 libhrpa.so
+# 生成共享库 libhrpf.so
 # -------------------------------
-add_library(hrpa SHARED ${ALL_SOURCES})
-set_target_properties(hrpa PROPERTIES
-        OUTPUT_NAME "hrpa"
+add_library(hrpf SHARED ${ALL_SOURCES})
+set_target_properties(hrpf PROPERTIES
+        OUTPUT_NAME "hrpf"
         SUFFIX ".so"
 )
 
@@ -83,7 +83,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
 # -------------------------------
 # 链接外部库（根据 Makefile LDFLAGS）
 # -------------------------------
-target_link_libraries(hrpa PRIVATE
+target_link_libraries(hrpf PRIVATE
         ${CMAKE_SOURCE_DIR}/lib/libcudaMerge.so  # 本项目的自定义 CUDA 库
         cudart                                    # CUDA Runtime
         cublas                                    # cuBLAS 库
@@ -122,7 +122,7 @@ if(BUILD_TESTS)
                 RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
         )
 
-        # 链接共享库 hrpa
-        target_link_libraries(${test_name} PRIVATE hrpa)
+        # 链接共享库 hrpf
+        target_link_libraries(${test_name} PRIVATE hrpf)
     endforeach()
 endif()
