@@ -1,62 +1,63 @@
+#include <stdio.h>
+#include <sys/time.h>
+#include <string>
 #include <iostream>
-#include <thrust/sort.h>
-#include <thrust/device_ptr.h>
-#include <thrust/system/cuda/execution_policy.h>
-#include <cuda_runtime.h>
-#include <vector>
-#include <random>
+#include <fstream>
+#include "framework/framework.h"
+#include "algorithm/merge_sort/mergeSortProblem.h"
+#include "tool/initializer.h"
 
-void test_sort(double* data_d, int len, cudaStream_t stream, float& avg_time) {
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+void loadData(double* datar, int length) {
+    std::ifstream fin;
+    fin.open("./data/datamer.txt");
 
-    float total_time = 0.0f;
-
-    for (int i = 0; i < 100; ++i) {  // 运行 100 次，取平均时间
-        cudaEventRecord(start, stream);
-        thrust::sort(thrust::cuda::par.on(stream), thrust::device_pointer_cast(data_d), thrust::device_pointer_cast(data_d + len));
-        cudaEventRecord(stop, stream);
-        cudaEventSynchronize(stop);
-
-        float elapsed_time;
-        cudaEventElapsedTime(&elapsed_time, start, stop);
-        total_time += elapsed_time;
+    if(!fin)
+    {
+        std::cout<<"can not open the file data.txt"<<std::endl;
+        exit(1);
     }
 
-    avg_time = total_time / 100;  // 计算平均时间
-
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    for(int i = 0; i < length; ++i){
+        fin >> datar[i];
+    }
 }
 
-int main() {
-    cudaStream_t stream;
-    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
+int main(int argc, char **argv){
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> dist(0.0, 10000.0);
+    std::size_t length = std::atoi(argv[1]);
+    std::string interleaving = argv[2];
 
-    for (int n = 10'000'000; n <= 100'000'000; n += 10'000'000) { // 10M 到 100M，步长 10M
-        std::vector<double> data(n);
-        for (int i = 0; i < n; ++i) {
-            data[i] = dist(gen);
-        }
+    ArrayList* data = new ArrayList(length);
+    auto& runtime = Runtime::get_instance();
+    //auto cpu = runtime.get_cpu();
+    auto cpu = runtime.get_gpu();
+    (data)->access(cpu, MemAccess::W);
+    loadData(data->get_cdata(), length);
+    // initialize(data, length);
+    Framework::init();
+    MergesortProblem* problem = new MergesortProblem(new MergeData_t(data), cpu_sort, gpu_sort, nullptr);
+    //std::string mask = "10";
+    //problem->set_mask(mask);
+    // std::cout << "init problem & threads end" << std::endl;
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+    Framework::solve(problem, interleaving);
+    data->access(Runtime::get_instance().get_cpu(), MemAccess::R);
+    gettimeofday(&end, NULL);
 
-        double* data_d;
-        cudaMalloc((void**)&data_d, n * sizeof(double));
+    double seconds = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
+    std::cout << seconds << std::endl;
+    // data->access(Runtime::get_instance().get_cpu(), MemAccess::R);
+    _TYPE* dd = data->get_cdata();
 
-        cudaMemcpy(data_d, data.data(), n * sizeof(double), cudaMemcpyHostToDevice);
+    // for(int i = 0;  i < length; ++i){
+    // 	std::cout << dd[i] <<" ";
+    // 	if(i&&i % 16 == 0) std::cout << std::endl;
+    // }
 
-        float avg_time = 0.0f;
-        test_sort(data_d, n, stream, avg_time);
-
-        std::cout << "Size: " << n << " elements, Avg Time: " << avg_time << " ms" << std::endl;
-
-        cudaFree(data_d);
-    }
-
-    cudaStreamDestroy(stream);
+    delete problem;
+    //std::cout << "delete problem..." << std::endl;
+    delete data;
     return 0;
 }
+
