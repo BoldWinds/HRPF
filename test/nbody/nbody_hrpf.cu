@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <string>
-
+#include <omp.h>
+#include <cmath>
 #include "algorithm/parallel_for_zero/parallel_for_zb.h"
 #include "tool/initializer.h"
 #include "framework/framework.h"
 #include "tool/helper.h"
-#include <omp.h>
-#include <cmath>
+
 
 struct UserData_t : public Basedata_t{
 public:
@@ -106,10 +106,10 @@ void gfor_func(Basedata_t* data){
 int main(int argc, char **argv){
     Framework::init();
     length = std::atoi(argv[1]);
+    int max_run = std::atoi(argv[2]);
     ArrayList* datax1 = new ArrayList(length);
     ArrayList* datax2 = new ArrayList(length);
     ArrayList* datax3 = new ArrayList(length);
-
     ArrayList* datav1 = new ArrayList(length);
     ArrayList* datav2 = new ArrayList(length);
     ArrayList* datav3 = new ArrayList(length);
@@ -121,19 +121,23 @@ int main(int argc, char **argv){
     initialize(datav2, length);
     initialize(datav3, length);
     initialize(datamass, length);
-    dt = (double)(rand() % 10);
-    UserData_t* user = new UserData_t({datax1, datax2, datax3, datamass,
-        datav1, datav2, datav3});
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
-    parallel_for(new loopData_t(0, length, user), cfor_func, gfor_func);
-    gettimeofday(&end, NULL);
-    double seconds = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    std::cout << seconds << std::endl;
+    
+    double milliseconds = 0;
+    for(int run = 0; run < max_run; ++run){
+        dt = (double)(rand() % 10);
+        UserData_t* user = new UserData_t({datax1, datax2, datax3, datamass, datav1, datav2, datav3});
+        struct timeval start, end;
+        gettimeofday(&start, NULL);
+        parallel_for(new loopData_t(0, length, user), cfor_func, gfor_func);
+        gettimeofday(&end, NULL);
+        milliseconds += (end.tv_sec - start.tv_sec)*1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+        delete user;
+    }
+    milliseconds /= max_run;
+    std::cout << milliseconds << std::endl;
     delete datax1;
     delete datax2;
     delete datax3;
-
     delete datav1;
     delete datav2;
     delete datav3;

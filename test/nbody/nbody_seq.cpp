@@ -1,6 +1,5 @@
 #include <iostream>
 #include <stdio.h>
-#include <omp.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <cmath>
@@ -25,13 +24,11 @@ int main(int argc, char **argv) {
         v2[i] = (double)(rand() % 100);
         v3[i] = (double)(rand() % 100);
     }
-
+    double dt = (double)(rand() % 10);
     double milliseconds = 0;
     for(int run = 0; run < max_run; ++run) {
-        double dt = (double)(rand() % 10);
         struct timeval start, end;
         gettimeofday(&start, NULL);
-        #pragma omp parallel for simd shared(x1,x2,x3,v1,v2,v3,mass)
         for(int i = 0; i < dim; ++i){
             double Fx = 0; double Fy = 0; double Fz = 0;
             for(int j = 0; j < dim; ++j) {
@@ -43,10 +40,12 @@ int main(int argc, char **argv) {
                 double invDist3 = pow(invDist, 3);
                 Fx += dx*invDist3; Fy += dy*invDist3; Fz += dz*invDist3;
             }
-            v1[i] += dt * Fx; v2[i] += dt*Fy; v3[i] += dt*Fz;
+            v1[i] += dt * Fx; 
+            v2[i] += dt*Fy; 
+            v3[i] += dt*Fz;
         }
         gettimeofday(&end, NULL);
-        milliseconds += (end.tv_sec - start.tv_sec)*1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+        milliseconds += (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
     }
     milliseconds /= max_run;
     std::cout << milliseconds << std::endl;
@@ -57,5 +56,4 @@ int main(int argc, char **argv) {
     delete [] v2;
     delete [] v3;
     delete [] mass;
-
 }
