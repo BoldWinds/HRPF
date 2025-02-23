@@ -9,7 +9,6 @@
 #include <string>
 #include <time.h> //for srand
 #include <limits.h>
-#include <omp.h>
 #include <sys/time.h>
 #include <math.h>
 using namespace std;
@@ -81,7 +80,6 @@ void KMEANS::kmeans()
     while (clusterChanged)
     {
         clusterChanged--; //= false;
-#pragma omp parallel for num_threads(22)
         for (int i = 0; i < rows; ++i)
         {
             int minIndex = -1;

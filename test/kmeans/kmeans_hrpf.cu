@@ -281,7 +281,8 @@ void KMEANS::randCent()
 void KMEANS::loadDataSet()
 {
     std::ifstream fin;
-    fin.open("kmdata_6144_8.txt");
+    std::string filename = "./data/kmdata_" + std::to_string(rows) + "_8.txt";
+    fin.open(filename);
 
     if (!fin)
     {
@@ -366,15 +367,15 @@ void KMEANS::kmeans()
         }
     }
     gettimeofday(&end, NULL);
-    double seconds = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    std::cout << seconds << std::endl;
-    std::ofstream ofs;                //定义流对象
+    double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+    std::cout << milliseconds << std::endl;
+    /*std::ofstream ofs;                //定义流对象
     ofs.open("km_new.txt", ios::out); //以写的方式打开文件
     for (int i = 0; i < rows; ++i)
     {
         ofs << clusterAssment[i].minIndex << std::endl;
     }
-    ofs.close();
+    ofs.close();*/
 
     delete user;
     delete trainData0;

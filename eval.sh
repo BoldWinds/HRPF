@@ -55,3 +55,12 @@ for (( LENGTH=1024; LENGTH<=57600; LENGTH+=4096 )); do
     ./build/bin/adjoint_conv/ac_omp $LENGTH $MAX_RUN
     ./build/bin/adjoint_conv/ac_hrpf $LENGTH $MAX_RUN
 done
+
+echo "kmeans"
+echo "LENGTH,SEQ,OMP,HRPF"
+for (( LENGTH=1024; LENGTH<=8192; LENGTH+=1024 )); do
+    echo $LENGTH
+    ./build/bin/kmeans/kmeans_seq $LENGTH
+    ./build/bin/kmeans/kmeans_omp $LENGTH
+    ./build/bin/kmeans/kmeans_hrpf $LENGTH
+done
