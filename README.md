@@ -18,7 +18,11 @@ make
 
 ### Test
 
-How string parameter "interleaving" works???
+1. knn, kmeans are not better than the original version.
+2. AdjointConv takes too long time to run.
+3. Strassen-Winograd is not implemented.
+4. Hadamard is not implemented.
+5. Merge Sort is not implemented.
 
 ### AutoTest Script
 
