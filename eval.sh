@@ -1,6 +1,15 @@
 #!/usr/bin/zsh
 MAX_RUN=10
 
+echo "dft"
+echo "LENGTH,SEQ,OMP,HRPF"
+for (( LENGTH=1024; LENGTH<=19456; LENGTH+=4096 )); do
+    echo $LENGTH
+    ./build/bin/dft/dft_seq $LENGTH $MAX_RUN
+    ./build/bin/dft/dft_omp $LENGTH $MAX_RUN
+    ./build/bin/dft/dft_hrpf $LENGTH $MAX_RUN
+done
+
 echo "mvm"
 echo "LENGTH,SEQ,OMP,HRPF"
 for (( LENGTH=416; LENGTH<=2720; LENGTH+=256 )); do

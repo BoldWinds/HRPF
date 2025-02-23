@@ -3,7 +3,6 @@
 #include <string>
 #include <stdlib.h>
 #include <iostream>
-#include <omp.h>
 #include <cmath>
 #include <fstream>
 
@@ -30,13 +29,10 @@ void cfor_func(double* ar, double* ai, double* tr, double* ti){
 }
 
 void seq_cfor_func(double* ar, double* ai, double* tr, double* ti){
-    // std::cout << "enter seq ..." << std::endl;
     size_t s_i = 0;
     size_t e_i = length;
     size_t s_j = 0;
     size_t e_j = length;
-    // std::cout << s_i << s_j << e_i << e_j << std::endl;
-    //#pragma omp parallel for simd// private(j,i)
     for(int i = s_i; i < e_i; ++i){
         tr[i] = 0; double wnr = 0;
         ti[i] = 0; double wni = 0;
@@ -44,7 +40,6 @@ void seq_cfor_func(double* ar, double* ai, double* tr, double* ti){
            wnr = cos(2.0 * PI * i * j / length);
            wni = sin(2.0 * PI * i * j / length);
 
-        //    std::cout << i << j << wnr << " " << wni << std::endl;
            tr[i] += (ar[j] * wnr - ai[j] * wni);
            ti[i] += (ar[j] * wni + ai[j] * wnr);
         }
@@ -52,12 +47,8 @@ void seq_cfor_func(double* ar, double* ai, double* tr, double* ti){
 }
 
 void initialize(double* datar, double* datai, int length) {
-    // srand48(time(NULL));
-    // for(int i = 0; i < length; ++i){
-    //     data[i] = (double)(rand() % 100);
-    // }
     std::ifstream fin;
-    fin.open("datadft.txt");
+    fin.open("./data/datadft.txt");
 
 	if(!fin)
 	{
@@ -70,45 +61,29 @@ void initialize(double* datar, double* datai, int length) {
     }
 }
 
-void print(double* datar, double* datai, int length) {
-    for(int i = 0; i < length; ++i){
-        std::cout << datar[i] << " " ;;//<< datai[i] << std::endl;
-        if(i && i % 4 == 0) std::cout << std::endl;
-    }
-}
 
 int main(int argc, char **argv){
     std::size_t N = std::atoi(argv[1]);
     length = N;
-    // std::cout << "length:" << length << std::endl;
+    int max_run = std::atoi(argv[2]);
+
     double* datar = new double[length];
     double* datai = new double[length];
     double* tempr = new double[length];
     double* tempi = new double[length];
     initialize(datar, datai, length);
-    // initialize(datai, length);
 
-    struct timeval start, end;
-    // gettimeofday(&start, NULL);
-    // cfor_func(datar, datai, tempr, tempi);
-    // gettimeofday(&end, NULL);
-    // double seconds = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    // std::cout << seconds << std::endl;
-    // print(tempr, tempi, length);
+    double milliseconds = 0;
+    for(int run = 0; run < max_run; ++run){
+        struct timeval start, end;
+        gettimeofday(&start, NULL);
+        seq_cfor_func(datar, datai, tempr, tempi);
+        gettimeofday(&end, NULL);
+        milliseconds += (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+    }
+    milliseconds /= max_run;
+    std::cout << milliseconds << std::endl;
 
-    gettimeofday(&start, NULL);
-    seq_cfor_func(datar, datai, tempr, tempi);
-    gettimeofday(&end, NULL);
-    double seconds =  (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    std::cout << seconds << std::endl;
-    print(tempr, tempi, length);
-    // auto da = data3->get_cdata();
-    // for(int i = 0; i < length; ++i){
-    //     for(int j = 0; j < length; ++j){
-    //         std::cout << da[i + length*j] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
     delete []datar;
     delete []datai;
     delete []tempr;

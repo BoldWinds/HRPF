@@ -124,6 +124,7 @@ void loadData(double* datar, double* datai, int length) {
 int main(int argc, char **argv){
     Framework::init();
     std::size_t N = std::atoi(argv[1]);
+    int max_run = std::atoi(argv[2]);
     length = N;
     ArrayList* datar = new ArrayList(length);
     ArrayList* datai = new ArrayList(length);
@@ -146,17 +147,22 @@ int main(int argc, char **argv){
     // datar->copy_from(datar->get_gdata(), datar->get_cdata(), Runtime::get_instance().get_gpu());
     // datai->copy_from(datai->get_gdata(), datai->get_cdata(), Runtime::get_instance().get_gpu());
     // auto da = datar->get_cdata();
-    UserData_t* user = new UserData_t({datar,datai,tempr, tempi});
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
-    parallel_for(new loopData_t(0, length, user), cfor_func, gfor_func);
-    gettimeofday(&end, NULL);
-    double seconds = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    std::cout << seconds << std::endl;
+    double milliseconds = 0;
+    for(int run = 0; run < max_run; ++run){
+        UserData_t* user = new UserData_t({datar,datai,tempr, tempi});
+        struct timeval start, end;
+        gettimeofday(&start, NULL);
+        parallel_for(new loopData_t(0, length, user), cfor_func, gfor_func);
+        gettimeofday(&end, NULL);
+        milliseconds += (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+        delete user;
+    }
+    milliseconds /= max_run;
+    std::cout << milliseconds << std::endl;
     // cudaDeviceSynchronize();
     // datar->copy_from(datar->get_cdata(), datar->get_gdata(), Runtime::get_instance().get_cpu());
 
-    auto da = tempr->get_cdata();
+    //auto da = tempr->get_cdata();
 
     /*for(int i = 0; i < length; ++i){
         // for(int j = 0; j < length; ++j){
@@ -176,7 +182,7 @@ int main(int argc, char **argv){
     //     if(i && i % 4 == 0)
     //     std::cout << std::endl;
     // }
-    delete user;
+    
     delete datar;
     delete datai;
     delete tempr;
