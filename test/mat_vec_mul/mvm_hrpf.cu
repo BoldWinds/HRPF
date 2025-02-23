@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <string>
-
+#include <omp.h>
 #include "algorithm/parallel_for_zero/parallel_for_zb.h"
 #include "tool/initializer.h"
 #include "framework/framework.h"
 #include "tool/helper.h"
-//#include "parallel_for_harness.hpp"
-#include <omp.h>
+
 static int length;
 struct UserData_t : public Basedata_t{
 public:
@@ -92,29 +91,27 @@ void gfor_func(Basedata_t* data){
 int main(int argc, char **argv){
     Framework::init();
     length = std::atoi(argv[1]);
+    int max_run = std::atoi(argv[2]);
+
     Matrix* data1 = new Matrix(length,length);
     ArrayList* data2 = new ArrayList(length);
     ArrayList* data3 = new ArrayList(length);
     initialize(length, data1);
     initialize(data2, length);
     initialize(data3, length);
-    UserData_t* user = new UserData_t({data1}, {data2, data3});
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
-    parallel_for(new loopData_t(0, length, user), cfor_func, gfor_func);
 
-    gettimeofday(&end, NULL);
-    double seconds = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    std::cout << seconds << std::endl;
-
-    auto da = data3->get_cdata();
-    // for(int i = 0; i < length; ++i){
-    //     for(int j = 0; j < length; ++j){
-    //         std::cout << da[i + length*j] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    delete user;
+    double milliseconds = 0;
+    for(int run = 0; run <= max_run; ++run){
+        UserData_t* user = new UserData_t({data1}, {data2, data3});
+        struct timeval start, end;
+        gettimeofday(&start, NULL);
+        parallel_for(new loopData_t(0, length, user), cfor_func, gfor_func);
+        gettimeofday(&end, NULL);
+        milliseconds += (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+        delete user;
+    }
+    milliseconds /= max_run;
+    std::cout << milliseconds << std::endl;
     delete data1;
     delete data2;
     delete data3;

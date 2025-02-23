@@ -1,6 +1,15 @@
 #!/usr/bin/zsh
 MAX_RUN=10
 
+echo "mvm"
+echo "LENGTH,SEQ,OMP,HRPF"
+for (( LENGTH=416; LENGTH<=2720; LENGTH+=256 )); do
+    echo $LENGTH
+    ./build/bin/mat_vec_mul/mvm_seq $LENGTH $MAX_RUN
+    ./build/bin/mat_vec_mul/mvm_omp $LENGTH $MAX_RUN
+    ./build/bin/mat_vec_mul/mvm_hrpf $LENGTH $MAX_RUN
+done
+
 echo "Nbody"
 echo "LENGTH,SEQ,OMP,HRPF"
 for (( LENGTH=1024; LENGTH<=19456; LENGTH+=2048 )); do
