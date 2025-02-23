@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <string>
-
+#include <omp.h>
 #include "algorithm/parallel_for_zero/parallel_for_zb.h"
 #include "tool/initializer.h"
 #include "framework/framework.h"
 #include "tool/helper.h"
-#include <omp.h>
-// #include <cmath>
 #include <fstream>
 
 static int length;
@@ -93,7 +91,7 @@ void gfor_func(Basedata_t* data){
     }
     // std::cout << blocks_required << std::endl;
     cudaStream_t stream_ = stream();//, 0, stream_
-    cudaError_t error;
+    //cudaError_t error;
     kernel_conv<<<blocks_required, threads_per_block, 0, stream_>>>(s_i, e_i, s_j, e_j,
         chunk_size, a,b,c, length);
     // double* da;
@@ -104,7 +102,7 @@ void gfor_func(Basedata_t* data){
 
 void loadData(double* datar, double* datai, int length) {
     std::ifstream fin;
-    fin.open("datadft.txt");
+    fin.open("./data/datadft.txt");
 
 	if(!fin)
 	{
@@ -128,6 +126,7 @@ int main(int argc, char **argv){
     Framework::init();
     std::size_t N = std::atoi(argv[1]);
     length = N;
+    int max_run = std::atoi(argv[2]);
     ArrayList* a = new ArrayList(length*length);
     ArrayList* b = new ArrayList(length*length);
     ArrayList* c = new ArrayList(length*length);
@@ -137,19 +136,19 @@ int main(int argc, char **argv){
     (b)->access(cpu, MemAccess::W);
     loadData(a->get_cdata(), b->get_cdata(), length*length);
 
-    UserData_t* user = new UserData_t({a,b,c});
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
-    parallel_for(new loopData_t(0, length*length, user), cfor_func, gfor_func);
-    gettimeofday(&end, NULL);
-    double seconds = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    std::cout << seconds << std::endl;
-    // cudaDeviceSynchronize();
-    // datar->copy_from(datar->get_cdata(), datar->get_gdata(), Runtime::get_instance().get_cpu());
+    double milliseconds = 0;
+    for(int run = 0; run < max_run; ++run){
+        UserData_t* user = new UserData_t({a,b,c});
+        struct timeval start, end;
+        gettimeofday(&start, NULL);
+        parallel_for(new loopData_t(0, length*length, user), cfor_func, gfor_func);
+        gettimeofday(&end, NULL);
+        milliseconds += (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+        delete user;
+    }
+    milliseconds /= max_run;
+    std::cout << milliseconds << std::endl;
 
-    auto da = c->get_cdata();
-
-    // print(da, length*length);
     delete a;
     delete b;
     delete c;

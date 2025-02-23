@@ -1,5 +1,5 @@
 #!/usr/bin/zsh
-MAX_RUN=10
+MAX_RUN=$1
 
 echo "dft"
 echo "LENGTH,SEQ,OMP,HRPF"
@@ -38,3 +38,11 @@ for (( LENGTH=1024; LENGTH<=8192; LENGTH+=1024 )); do
 done
 
 
+echo " AdjointConv"
+echo "LENGTH,SEQ,OMP,HRPF"
+for (( LENGTH=1024; LENGTH<=57600; LENGTH+=4096 )); do
+    echo $LENGTH
+    ./build/bin/adjoint_conv/ac_seq $LENGTH $MAX_RUN
+    ./build/bin/adjoint_conv/ac_omp $LENGTH $MAX_RUN
+    ./build/bin/adjoint_conv/ac_hrpf $LENGTH $MAX_RUN
+done
