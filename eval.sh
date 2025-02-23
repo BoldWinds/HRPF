@@ -1,6 +1,15 @@
 #!/usr/bin/zsh
 MAX_RUN=$1
 
+echo "knn"
+echo "LENGTH,SEQ,OMP,HRPF"
+for (( LENGTH=35840; LENGTH<=115712; LENGTH+=8192 )); do
+    echo $LENGTH
+    ./build/bin/knn/knn_seq $LENGTH
+    ./build/bin/knn/knn_omp $LENGTH
+    ./build/bin/knn/knn_hrpf $LENGTH
+done
+
 echo "dft"
 echo "LENGTH,SEQ,OMP,HRPF"
 for (( LENGTH=1024; LENGTH<=19456; LENGTH+=4096 )); do

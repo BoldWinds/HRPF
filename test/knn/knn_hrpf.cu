@@ -131,8 +131,8 @@ KNN::KNN(int k, double* train, double* test, int* label,
 	this->k = k;
     dataSet = train; this->test = test; this->label = label;
     map_index_dist = index_dist;
-	fin.open("train.txt");
-    finl.open("labeltrain.txt");
+	fin.open("./data/train.txt");
+    finl.open("./data/labeltrain.txt");
 	if(!fin)
 	{
 		std::cout<<"can not open the file data.txt"<<std::endl;
@@ -149,8 +149,8 @@ KNN::KNN(int k, double* train, double* test, int* label,
 		finl>>label[i];
 	}
 
-    tfin.open("test.txt");
-    tfinl.open("labeltest.txt");
+    tfin.open("./data/test.txt");
+    tfinl.open("./data/labeltest.txt");
 	// std::cout<<"please input the test data :"<<std::endl;
 	/* inuput the test data */
     for(int j = 0; j < num_test; ++j)
@@ -193,8 +193,8 @@ void KNN:: get_all_distance()
 
 	// allDistance->access(Runtime::get_instance().get_cpu(), MemAccess::R);
     gettimeofday(&end, NULL);
-    double seconds = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    // std::cout << seconds << std::endl;
+    double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+    std::cout << milliseconds << std::endl;
     int *index = new int[rows];
 	#pragma omp parallel for
 	for(int i = 0; i < rows; ++i){
@@ -216,9 +216,6 @@ void KNN:: get_all_distance()
             t_label = it->first;
         }
     }
-
-    // std::cout << "The test data belongs to the " << t_label  << " true:" << test_label << std::endl;
-    std::cout << seconds << " " << t_label  << " " << test_label<< std::endl;
     delete trainData;
     delete testData;
     delete allDistance;
