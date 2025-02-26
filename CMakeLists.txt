@@ -123,6 +123,6 @@ if(BUILD_TESTS)
         )
 
         # 链接共享库 hrpf
-        target_link_libraries(${test_name} PRIVATE hrpf)
+        target_link_libraries(${test_name} PRIVATE hrpf cublas)
     endforeach()
 endif()
