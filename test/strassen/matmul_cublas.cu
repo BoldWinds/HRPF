@@ -24,17 +24,17 @@
     } while(0)
 
 double matmul_cublas(int n, int max_run) {
-    float *A, *B, *C;
+    double *A, *B, *C;
     
     // Allocate memory
-    CHECK_CUDA_ERROR(cudaMallocManaged(&A, n * n * sizeof(float)));
-    CHECK_CUDA_ERROR(cudaMallocManaged(&B, n * n * sizeof(float)));
-    CHECK_CUDA_ERROR(cudaMallocManaged(&C, n * n * sizeof(float)));
+    CHECK_CUDA_ERROR(cudaMallocManaged(&A, n * n * sizeof(double)));
+    CHECK_CUDA_ERROR(cudaMallocManaged(&B, n * n * sizeof(double)));
+    CHECK_CUDA_ERROR(cudaMallocManaged(&C, n * n * sizeof(double)));
 
     // Initialize matrices
     for (int i = 0; i < n * n; i++) {
-        A[i] = static_cast<float>(rand()) / RAND_MAX;
-        B[i] = static_cast<float>(rand()) / RAND_MAX;
+        A[i] = static_cast<double>(rand()) / RAND_MAX;
+        B[i] = static_cast<double>(rand()) / RAND_MAX;
         C[i] = 0.0f;  // Initialize C to zeros
     }
 
@@ -42,7 +42,7 @@ double matmul_cublas(int n, int max_run) {
     cublasHandle_t handle;
     CHECK_CUBLAS_ERROR(cublasCreate(&handle));
 
-    float alpha = 1.0f, beta = 0.0f;
+    double alpha = 1.0f, beta = 0.0f;
     
     // Make sure data is ready on device before timing
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
@@ -50,7 +50,7 @@ double matmul_cublas(int n, int max_run) {
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int run = 0; run < max_run; ++run) {
-        CHECK_CUBLAS_ERROR(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, n, n, n, 
+        CHECK_CUBLAS_ERROR(cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, n, n, n, 
                                        &alpha, A, n, B, n, &beta, C, n));
     }
     

@@ -3,13 +3,13 @@
 #include <omp.h>
 
 double matmul_openmp(int n, int max_run) {
-    float *A = new float[n * n];
-    float *B = new float[n * n];
-    float *C = new float[n * n];
+    double *A = new double[n * n];
+    double *B = new double[n * n];
+    double *C = new double[n * n];
 
     for (int i = 0; i < n * n; i++) {
-        A[i] = static_cast<float>(rand()) / RAND_MAX;
-        B[i] = static_cast<float>(rand()) / RAND_MAX;
+        A[i] = static_cast<double>(rand()) / RAND_MAX;
+        B[i] = static_cast<double>(rand()) / RAND_MAX;
         C[i] = 0;
     }
 
