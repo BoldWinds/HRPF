@@ -8,6 +8,16 @@ cmake ..
 make
 ```
 
+## Test
+
+install python and dependencies and run:
+
+```shell
+python test.py
+```
+
+the output is an excel file.
+
 ## Todos
 
 ### Missing Codes
