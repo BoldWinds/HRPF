@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.18)
 project(hrpf LANGUAGES CXX CUDA)
 
 # -------------------------------
@@ -8,7 +8,6 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_ARCHITECTURES 89)    # 针对4090, 更换GPU需要更改计算能力
 
 # -------------------------------
 # 设置输出目录
@@ -19,12 +18,11 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # -------------------------------
 # 设置构建类型、PIC 和调试标志
 # -------------------------------
-# 默认 Debug 模式（包含 -O0 和 -g），共享库需要 PIC
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-add_compile_options(-O0 -g)
+add_compile_options(-O3 -DNDEBUG)
 
 # -------------------------------
 # 添加 OpenMP 支持
@@ -36,27 +34,40 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 # -------------------------------
+# 添加 StarPU 支持
+# -------------------------------
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(STARPU REQUIRED starpu-1.3)
+
+if(STARPU_FOUND)
+    message(STATUS "Found StarPU: ${STARPU_LIBRARIES}")
+    include_directories(${STARPU_INCLUDE_DIRS})
+    link_directories(${STARPU_LIBRARY_DIRS})
+else()
+    message(FATAL_ERROR "StarPU not found")
+endif()
+
+# -------------------------------
 # 设置 CUDA 编译标志
 # -------------------------------
-# NVCCFLAGS：-I. -gencode arch=compute_89,code=sm_89 -Xcompiler -fPIC -std=c++14
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -I. -gencode arch=compute_89,code=sm_89 -Xcompiler -fPIC")
+set(CMAKE_CUDA_ARCHITECTURES 89)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fPIC")
 
 # -------------------------------
 # 添加包含目录（根据 Makefile INCLUDE 变量）
 # -------------------------------
 include_directories(
-        ${CMAKE_SOURCE_DIR}/include    # 项目头文件
-        /usr/local/cuda/include        # CUDA 头文件
-        /usr/include/c++/11            # C++ 标准库（如有需要）
-        /opt/intel/oneapi/mkl/latest/include  # MKL 头文件
+    ${CMAKE_SOURCE_DIR}/include    # 项目头文件
+    /usr/local/cuda/include        # CUDA 头文件
+    /opt/intel/oneapi/mkl/latest/include  # MKL 头文件
 )
 
 # -------------------------------
 # 添加库搜索路径（根据 LDFLAGS 中的 -L 选项）
 # -------------------------------
 link_directories(
-        /usr/local/cuda/lib64
-        /opt/intel/oneapi/mkl/latest/lib
+    /usr/local/cuda/lib64
+    /opt/intel/oneapi/mkl/latest/lib
 )
 
 # -------------------------------
@@ -71,8 +82,8 @@ set(ALL_SOURCES ${CPP_SOURCES} ${CUDA_SOURCES})
 # -------------------------------
 add_library(hrpf SHARED ${ALL_SOURCES})
 set_target_properties(hrpf PROPERTIES
-        OUTPUT_NAME "hrpf"
-        SUFFIX ".so"
+    OUTPUT_NAME "hrpf"
+    SUFFIX ".so"
 )
 
 # -------------------------------
@@ -83,18 +94,19 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
 # -------------------------------
 # 链接外部库（根据 Makefile LDFLAGS）
 # -------------------------------
-target_link_libraries(hrpf PRIVATE
-        ${CMAKE_SOURCE_DIR}/lib/libcudaMerge.so  # 本项目的自定义 CUDA 库
-        cudart                                    # CUDA Runtime
-        cublas                                    # cuBLAS 库
-        dl                                        # 动态链接库
-        iomp5                                     # Intel OpenMP
-        mkl_intel_lp64                            # MKL 库
-        mkl_core
-        mkl_gnu_thread
-        pthread                                   # POSIX 线程
-        m                                         # 数学库
-        OpenMP::OpenMP_CXX                        # OpenMP（如使用 gcc 的 libgomp，则可能不需要额外指定）
+target_link_libraries(hrpf PUBLIC
+    ${CMAKE_SOURCE_DIR}/lib/libcudaMerge.so  # 本项目的自定义 CUDA 库
+    cudart                                    # CUDA Runtime
+    cublas                                    # cuBLAS 库
+    iomp5                                     # Intel OpenMP
+    mkl_intel_lp64                            # MKL 库
+    mkl_core
+    mkl_gnu_thread
+    pthread                                   # POSIX 线程
+    m                                         # 数学库
+    OpenMP::OpenMP_CXX                        # OpenMP（如使用 gcc 的 libgomp，则可能不需要额外指定）
+    ${STARPU_LIBRARIES}                       # StarPU 库
+    dl                                        # 动态链接库
 )
 
 # -------------------------------
@@ -119,10 +131,10 @@ if(BUILD_TESTS)
         # 为每个测试源文件生成一个可执行文件，并设置输出目录
         add_executable(${test_name} ${test_file})
         set_target_properties(${test_name} PROPERTIES
-                RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
+            RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
         )
 
         # 链接共享库 hrpf
-        target_link_libraries(${test_name} PRIVATE hrpf cublas)
+        target_link_libraries(${test_name} PUBLIC hrpf)
     endforeach()
 endif()
