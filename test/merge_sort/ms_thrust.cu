@@ -27,7 +27,9 @@ void test_sort(double* data_d, int len, cudaStream_t stream, float& elapsed_time
     cudaEventDestroy(stop);
 }
 
-int main() {
+int main(int argc, char** argv){
+    int n = std::atoi(argv[1]);
+    int max_run = std::atoi(argv[2]);
     cudaStream_t stream;
     cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
 
@@ -35,7 +37,8 @@ int main() {
     std::mt19937 gen(rd());
     std::uniform_real_distribution<double> dist(0.0, 10000.0);
 
-    for (int n = 10485670; n <= 104857600; n += 10485670) {
+    double milliseconds = 0;
+    for (int run = 0; run <= max_run; run++) {
         std::vector<double> data(n);
         for (int i = 0; i < n; ++i) {
             data[i] = dist(gen);
@@ -48,11 +51,11 @@ int main() {
 
         float elapsed_time = 0.0f;
         test_sort(data_d, n, stream, elapsed_time);
-
-        std::cout << "Size: " << n << " elements, Time: " << elapsed_time << " ms" << std::endl;
+        milliseconds += elapsed_time;
 
         cudaFree(data_d);
     }
+    std::cout << milliseconds << std::endl;
 
     cudaStreamDestroy(stream);
     return 0;

@@ -1,6 +1,17 @@
 #!/usr/bin/zsh
 MAX_RUN=$1
 
+echo "MergeSort"
+echo "LENGTH,SEQ,STD,GPU,THRUST,HRPF"
+for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
+    echo $LENGTH
+    ./build/bin/merge_sort/ms_seq $LENGTH $MAX_RUN
+    ./build/bin/merge_sort/ms_std $LENGTH $MAX_RUN
+    ./build/bin/merge_sort/ms_gpu $LENGTH $MAX_RUN
+    ./build/bin/merge_sort/ms_thrust $LENGTH $MAX_RUN
+    ./build/bin/merge_sort/ms_hrpf $LENGTH $MAX_RUN
+done
+
 echo "knn"
 echo "LENGTH,SEQ,OMP,HRPF"
 for (( LENGTH=35840; LENGTH<=115712; LENGTH+=8192 )); do
