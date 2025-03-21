@@ -1,29 +1,22 @@
-#include <stdio.h>
 #include <sys/time.h>
-#include <string>
-#include <stdlib.h>
 #include <iostream>
-#include <omp.h>
-#include <cmath>
 #include <fstream>
+#include <omp.h>
 
 static int length;
 #define PI 3.14159
 
-void cfor_func(double* a, double* b, double* c){
-    size_t s_i = 0;
-    size_t e_i = length*length;
-    size_t s_j = 0;
-    size_t e_j = length*length;
-    #pragma omp parallel for simd
-    for(int i = s_i; i < e_i; ++i){
+void conv(double* a, double* b, double* c){
+    #pragma omp parallel for
+    for(int i = 0; i < length; ++i){
         double cur_c = 0;
-        for(int j = i; j < e_j; ++j) {
+        for(int j = i; j < length; ++j) {
            cur_c += 5.5*b[j]*a[j-i];
         } 
         c[i] = cur_c;
     }
 }
+
 
 void initialize(double* datar, double* datai, int length) {
     std::ifstream fin;
@@ -40,34 +33,20 @@ void initialize(double* datar, double* datai, int length) {
     }
 }
 
-void print(double* datar, int length) {
-    for(int i = 0; i < length; ++i){
-        std::cout << datar[i] << " " ;;//<< datai[i] << std::endl;
-        if(i && i % 4 == 0) std::cout << std::endl;
-    }
-}
-
 int main(int argc, char **argv){
     std::size_t N = std::atoi(argv[1]);
     length = N;
-    int max_run = std::atoi(argv[2]);
-    // std::cout << "length:" << length << std::endl;
-    double* a = new double[length*length];
-    double* b = new double[length*length];
-    double* c = new double[length*length];
+    double* a = new double[length];
+    double* b = new double[length];
+    double* c = new double[length];
 
-    initialize(a, b, length*length);
+    initialize(a, b, length);
 
-    double milliseconds = 0;
-    for(int run = 0; run < max_run; ++run){
-        struct timeval start, end;
-        gettimeofday(&start, NULL);
-        cfor_func(a, b, c);
-        gettimeofday(&end, NULL);
-        milliseconds += (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
-        
-    }
-    milliseconds /= max_run;
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+    conv(a, b, c);
+    gettimeofday(&end, NULL);
+    double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
     std::cout << milliseconds << std::endl;
 
     delete []a;

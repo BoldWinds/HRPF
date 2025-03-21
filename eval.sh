@@ -23,6 +23,7 @@ MAX_RUN=$1
 #     ./build/bin/strassen/strassen_hrpf  $LENGTH "BBBBBBBBBB"
 # done
 
+
 echo "hadamard"
 echo "LENGTH,SEQ,OMP,HRPF"
 for (( LENGTH=416; LENGTH<=2720; LENGTH+=256)); do
@@ -81,17 +82,17 @@ for (( LENGTH=1024; LENGTH<=8192; LENGTH+=1024 )); do
     ./build/bin/transpose/transpose_omp $LENGTH $MAX_RUN
     ./build/bin/transpose/transpose_hrpf $LENGTH $MAX_RUN
 done
-# echo ""
+echo ""
 
-# echo "AdjointConv"
-# echo "LENGTH,SEQ,OMP,HRPF"
-# for (( LENGTH=1024; LENGTH<=57600; LENGTH+=4096 )); do
-#     echo $LENGTH
-#     ./build/bin/adjoint_conv/ac_seq $LENGTH $MAX_RUN
-#     ./build/bin/adjoint_conv/ac_omp $LENGTH $MAX_RUN
-#     ./build/bin/adjoint_conv/ac_hrpf $LENGTH $MAX_RUN
-# done
-# echo ""
+echo "AdjointConv"
+echo "LENGTH,SEQ,OMP,HRPF"
+for (( LENGTH=1024; LENGTH<=57600; LENGTH+=4096 )); do
+    echo $LENGTH
+    ./build/bin/adjoint_conv/ac_seq $LENGTH
+    ./build/bin/adjoint_conv/ac_omp $LENGTH
+    ./build/bin/adjoint_conv/ac_hrpf $LENGTH
+done
+echo ""
 
 # echo "kmeans"
 # echo "LENGTH,SEQ,OMP,HRPF"

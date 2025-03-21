@@ -29,7 +29,7 @@ void cfor_func(Basedata_t* data){
     auto c = ((UserData_t*)(d->buffer))->buffer[2]->get_cdata();
     size_t s_i = d->start;
     size_t e_i = d->end;
-    size_t e_j = length*length;
+    size_t e_j = length;
     // std::cout << s_i << e_i << std::endl;
     #pragma omp parallel for simd
     for(int i = s_i; i < e_i ; ++i){
@@ -76,7 +76,7 @@ void gfor_func(Basedata_t* data){
     size_t s_i = d->start;
     size_t e_i = d->end;
     size_t s_j = 0;
-    size_t e_j = length*length;
+    size_t e_j = length;
     // std::cout << s_i << e_i << "g" << std::endl;
     // std::cout << "s_i" << s_i << " " << e_i << std::endl;
     int blocks_required = 1;
@@ -126,29 +126,25 @@ int main(int argc, char **argv){
     Framework::init();
     std::size_t N = std::atoi(argv[1]);
     length = N;
-    int max_run = std::atoi(argv[2]);
-    ArrayList* a = new ArrayList(length*length);
-    ArrayList* b = new ArrayList(length*length);
-    ArrayList* c = new ArrayList(length*length);
+    //int max_run = std::atoi(argv[2]);
+    ArrayList* a = new ArrayList(length);
+    ArrayList* b = new ArrayList(length);
+    ArrayList* c = new ArrayList(length);
     auto& runtime = Runtime::get_instance();
     auto cpu = runtime.get_cpu();
     (a)->access(cpu, MemAccess::W);
     (b)->access(cpu, MemAccess::W);
-    loadData(a->get_cdata(), b->get_cdata(), length*length);
+    loadData(a->get_cdata(), b->get_cdata(), length);
 
-    double milliseconds = 0;
-    for(int run = 0; run < max_run; ++run){
-        UserData_t* user = new UserData_t({a,b,c});
-        struct timeval start, end;
-        gettimeofday(&start, NULL);
-        parallel_for(new loopData_t(0, length*length, user), cfor_func, gfor_func);
-        gettimeofday(&end, NULL);
-        milliseconds += (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
-        delete user;
-    }
-    milliseconds /= max_run;
+    UserData_t* user = new UserData_t({a,b,c});
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+    parallel_for(new loopData_t(0, length, user), cfor_func, gfor_func);
+    gettimeofday(&end, NULL);
+    double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
     std::cout << milliseconds << std::endl;
 
+    delete user;
     delete a;
     delete b;
     delete c;
