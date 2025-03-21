@@ -192,9 +192,7 @@ void KNN:: get_all_distance()
     parallel_for(new loopData_t(0, rows, user), cfor_func, gfor_func);
 
 	// allDistance->access(Runtime::get_instance().get_cpu(), MemAccess::R);
-    gettimeofday(&end, NULL);
-    double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
-    std::cout << milliseconds << std::endl;
+
     int *index = new int[rows];
 	#pragma omp parallel for
 	for(int i = 0; i < rows; ++i){
@@ -216,6 +214,9 @@ void KNN:: get_all_distance()
             t_label = it->first;
         }
     }
+    gettimeofday(&end, NULL);
+    double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+    std::cout << milliseconds << std::endl;
     delete trainData;
     delete testData;
     delete allDistance;
@@ -235,7 +236,7 @@ int main(int argc, char **argv) {
     int*   label = new int[rows];
     double* index_dist;
     cudaHostAlloc(&index_dist, rows * sizeof(double), cudaHostAllocMapped);
-    KNN knn(5, train, test, label, index_dist);
+    KNN knn(3, train, test, label, index_dist);
 
     knn.get_all_distance();
 

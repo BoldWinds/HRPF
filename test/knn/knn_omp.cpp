@@ -1,180 +1,192 @@
-#include<iostream>
-#include<map>
-#include<vector>
-#include<stdio.h>
-#include<cmath>
-#include<cstdlib>
-#include<algorithm>
-#include<fstream>
-#include <omp.h>
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <cmath>
+#include <map>
+#include <algorithm>
 #include <sys/time.h>
+#include <omp.h>
 
-static int cols = 8;
-static int rows;
-static int num_test;
-static int test_label;
-// static int k = 5;
-
-class KNN {
+class KNN
+{
 private:
-    double *dataSet;
-    int *label;
-    double *test;
-    double *map_index_dist;
-    // double *map_label_freq;
     int k;
-    double get_distance(double *d1, double *d2, int index);
+    double **X_train;
+    int *Y_train;
+    double **X_test;
+    int *Y_test;
+    int samples;
+    int features;
+    int tests;
 
-public:
-    KNN(int k, double* train, double* test, int* label,
-        double* index_dist);
-    void get_all_distance();
-    void get_max_freq_lable();
-};
-
-KNN::KNN(int k, double* train, double* test, int* label,
-        double* index_dist)
-{
-
-    std::ifstream fin, tfin;
-    std::ifstream finl, tfinl;
-    // ofstream fout;
-	this->k = k;
-    dataSet = train; this->test = test; this->label = label;
-    map_index_dist = index_dist;
-	fin.open("./data/train.txt");
-    finl.open("./data/labeltrain.txt");
-
-	if(!fin)
-	{
-		std::cout<<"can not open the file data.txt"<<std::endl;
-		exit(1);
-	}
-
-    /* input the dataSet */
-	for(int i=0;i<rows;i++)
-	{
-		for(int j=0;j<cols;j++)
-		{
-			fin>>dataSet[i + j*rows];
-		}
-		finl>>label[i];
-	}
-    tfin.open("./data/test.txt");
-	tfinl.open("./data/labeltest.txt");
-	// std::cout<<"please input the test data :"<<std::endl;
-	/* inuput the test data */
-    for(int j = 0; j < num_test; ++j)
-	{
-        for(int i=0;i<cols;i++)
-		    tfin>>test[i];
-        tfinl >> test_label;
+    double computeDistance(const double *a, const double *b) const
+    {
+        double dist = 0.0;
+        for (int i = 0; i < features; i++)
+        {
+            dist += (a[i] - b[i]) * (a[i] - b[i]);
+        }
+        return std::sqrt(dist);
     }
-}
 
-double KNN:: get_distance(double *d1,double *d2, int index)
-{
-	double sum = 0;
-	for(int i=0;i<cols;i++)
-	{
-		sum += sqrt((d1[i*rows + index]-d2[i])*(d1[i*rows + index]-d2[i]));
-	}
+    int predictOne(const double *x) const
+    {
+        // Use arrays for distances instead of vector<pair>
+        double *distances = new double[samples];
+        int *labels = new int[samples];
 
-//	cout<<"the sum is = "<<sum<<endl;
-	return sum;
-}
+        for (int i = 0; i < samples; i++)
+        {
+            distances[i] = computeDistance(x, X_train[i]);
+            labels[i] = Y_train[i];
+        }
 
-void sortByKey(int* data, int len, double* key){
-    for(int i = 0; i < len-1; ++i){
-        for(int j = 0; j < len - 1-i; ++j){
-            if(key[j] > key[j+1]){
-                int td = data[j];
-                data[j] = data[j+1];
-                data[j+1] = td;
-
-                double tk = key[j];
-                key[j] = key[j+1];
-                key[j+1] = tk;
+        // Sort based on distances (simplified sort for the example)
+        for (int i = 0; i < k; i++)
+        {
+            for (int j = i + 1; j < samples; j++)
+            {
+                if (distances[j] < distances[i])
+                {
+                    std::swap(distances[i], distances[j]);
+                    std::swap(labels[i], labels[j]);
+                }
             }
         }
-    }
-}
 
-/*
- * calculate all the distance between test data and each training data
- */
-void KNN:: get_all_distance()
+        // Count votes
+        int best_label = -1;
+        int max_votes = 0;
+
+        // Simple voting algorithm using arrays
+        for (int i = 0; i < k; i++)
+        {
+            int votes = 0;
+            int current_label = labels[i];
+
+            for (int j = 0; j < k; j++)
+            {
+                if (labels[j] == current_label)
+                    votes++;
+            }
+
+            if (votes > max_votes)
+            {
+                max_votes = votes;
+                best_label = current_label;
+            }
+        }
+
+        delete[] distances;
+        delete[] labels;
+        return best_label;
+    }
+
+public:
+    KNN(int k, int samples, int features, int tests)
+    {
+        this->k = k;
+        this->samples = samples;
+        this->features = features;
+        this->tests = tests;
+
+        // Allocate memory for training data
+        X_train = new double *[samples];
+        for (int i = 0; i < samples; i++)
+        {
+            X_train[i] = new double[features];
+        }
+        Y_train = new int[samples];
+
+        // Allocate memory for test data
+        X_test = new double *[tests];
+        for (int i = 0; i < tests; i++)
+        {
+            X_test[i] = new double[features];
+        }
+        Y_test = new int[tests];
+
+        // Read training data
+        std::ifstream finX, tfinX, finY, tfinY;
+        finX.open("./data/train.txt");
+        finY.open("./data/labeltrain.txt");
+
+        if (!finX || !finY)
+        {
+            std::cout << "Cannot open the training data files" << std::endl;
+            exit(1);
+        }
+
+        for (int i = 0; i < samples; i++)
+        {
+            for (int j = 0; j < features; j++)
+            {
+                finX >> X_train[i][j];
+            }
+            finY >> Y_train[i];
+        }
+
+        // Read test data
+        tfinX.open("./data/test.txt");
+        tfinY.open("./data/labeltest.txt");
+
+        if (!tfinX || !tfinY)
+        {
+            std::cout << "Cannot open the test data files" << std::endl;
+            exit(1);
+        }
+
+        for (int i = 0; i < tests; i++)
+        {
+            for (int j = 0; j < features; j++)
+            {
+                tfinX >> X_test[i][j];
+            }
+            tfinY >> Y_test[i];
+        }
+    }
+
+    int *predict() const
+    {
+        int *predictions = new int[tests];
+
+#pragma omp parallel for
+        for (int i = 0; i < tests; i++)
+        {
+            predictions[i] = predictOne(X_test[i]);
+        }
+
+        return predictions;
+    }
+
+    double score() const
+    {
+        int correct = 0;
+        int *preds = predict();
+
+        for (int i = 0; i < tests; i++)
+        {
+            if (preds[i] == Y_test[i])
+            {
+                correct++;
+            }
+        }
+
+        double accuracy = static_cast<double>(correct) / tests;
+        delete[] preds;
+        return accuracy;
+    }
+};
+
+int main(int argc, char **argv)
 {
-    /******************************origin imple*******************************/
-	double distance;
-	int i;
+    int num_tests = std::stoi(argv[1]);
+    KNN knn(3, 4000, 8, num_tests);
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    #pragma omp parallel for num_threads(8)
-	for(i=0;i<rows;i++)
-	{
-        double sum = 0;
-        for(int j=0;j<cols;j++)
-        {
-            sum += sqrt((dataSet[j*rows + i]-test[j])*(dataSet[j*rows + i]-test[j]));
-        }
-		// distance = get_distance(dataSet,test, i);
-		//<key,value> => <i,distance>
-		map_index_dist[i] = sum;
-        // std::cout << sum << std::endl;
-	}
+    double acc = knn.score();
     gettimeofday(&end, NULL);
     double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
     std::cout << milliseconds << std::endl;
-    // std::cout << seconds << std::endl;
-	// //traverse the map to print the index and distance
-	// map<int,double>::const_iterator it = map_index_dis.begin();
-	// while(it!=map_index_dis.end())
-	// {
-	// 	cout<<"index = "<<it->first<<" distance = "<<it->second<<endl;
-	// 	it++;
-	// }
-
-	int *index = new int[rows];
-	#pragma omp parallel for
-	for(int i = 0; i < rows; ++i){
-		index[i] = i;
-	}
-
-	// thrust::sort_by_key(index, index+rows, map_index_dist);
-    sortByKey(index, rows, map_index_dist);
-	std::map<int, int> m;
-    for(int i = 0; i < k; ++i) {
-        // std::cout << map_index_dist[index[i]] << label[index[i]] << std::endl;
-        m[label[index[i]]]++;
-    }
-
-    int t_label = -1;
-    int freq = 0;
-    for(auto it = m.begin(); it != m.end(); ++it){
-        // std::cout << it->second << " " << it->first << std::endl;
-        if(it->second > freq){
-            freq = it->second;
-            t_label = it->first;
-        }
-    }
-    delete []dataSet;
-    delete []test;
-    delete []map_index_dist;
-    delete []index;
-    delete []label;
-}
-
-int main(int argc, char **argv) {
-    rows = 4000;
-    num_test = std::atoi(argv[1]);
-    double* train = new double[rows*cols];
-    double* test = new double[cols];
-    int*   label = new int[rows];
-    double* index_dist = new double[rows];
-    KNN knn(3, train, test, label, index_dist);
-
-    knn.get_all_distance();
-
     return 0;
 }
