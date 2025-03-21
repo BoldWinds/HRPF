@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cfloat>
 #include <sys/time.h>
+#include <omp.h>
 using namespace std;
 
 class KMEANS
@@ -14,16 +15,20 @@ private:
     double **dataSet;
     double **centroids;
     int *labels;
+    
     // 计算两个点之间的欧氏距离
-    double euclideanDistance(double *point1, double *point2)
+    inline double euclideanDistance(double *point1, double *point2)
     {
         double sum = 0.0;
+        #pragma omp simd reduction(+:sum)
         for (int i = 0; i < features; i++)
         {
-            sum += pow(point1[i] - point2[i], 2);
+            double diff = point1[i] - point2[i];
+            sum += diff * diff;
         }
         return sqrt(sum);
     }
+    
     // 随机初始化质心
     void initCentroids()
     {
@@ -59,15 +64,16 @@ public:
         {
             dataSet[i] = new double[features];
         }
+        
         centroids = new double*[k];
         for (int i = 0; i < k; ++i)
         {
             centroids[i] = new double[features];
         }
+        
         labels = new int[samples];
 
         srand(time(NULL));
-
 
         std::ifstream fin;
         std::string filename = "./data/kmdata_" + std::to_string(samples) + "_8.txt";
@@ -109,12 +115,30 @@ public:
         delete[] labels;
     }
 
-    void run()
+    void run(double tolerance = 0.000001)
     {
-        int converged = 10;
-        while (converged--)
+        bool converged = false;
+        
+        // 预先分配重用的内存
+        double **oldCentroids = new double*[k];
+        for (int i = 0; i < k; i++)
+        {
+            oldCentroids[i] = new double[features];
+        }
+        
+        // 预先分配簇大小和累加器数组
+        double **newCentroids = new double*[k];
+        for (int i = 0; i < k; i++)
+        {
+            newCentroids[i] = new double[features];
+        }
+        
+        int *clusterSizes = new int[k];
+        
+        while (!converged)
         {   
-            // 为每个样本分配最近的质心
+            // 1. 为每个样本分配最近的质心 - 这是计算的主要部分
+            #pragma omp parallel for
             for (int i = 0; i < samples; i++)
             {
                 double minDist = DBL_MAX;
@@ -133,73 +157,122 @@ public:
                 labels[i] = minIdx;
             }
 
-            // 保存旧的质心用于检查收敛
-            double **oldCentroids = new double *[k];
+            // 2. 保存旧的质心用于检查收敛
             for (int i = 0; i < k; i++)
             {
-                oldCentroids[i] = new double[features];
                 for (int j = 0; j < features; j++)
                 {
                     oldCentroids[i][j] = centroids[i][j];
                 }
             }
 
-            // 更新质心位置
-            // 首先计算每个簇的样本数
-            int *clusterSizes = new int[k]();
-
-            // 重置质心
+            // 3. 重置新质心和簇大小计数器
             for (int i = 0; i < k; i++)
             {
+                clusterSizes[i] = 0;
                 for (int j = 0; j < features; j++)
                 {
-                    centroids[i][j] = 0.0;
+                    newCentroids[i][j] = 0.0;
                 }
             }
 
-            // 累加每个簇中的所有点
-            for (int i = 0; i < samples; i++)
+            // 4. 累加每个簇中的所有点 - 简化的并行实现
+            #pragma omp parallel
             {
-                int cluster = labels[i];
-                clusterSizes[cluster]++;
-
-                for (int j = 0; j < features; j++)
+                // 每个线程的私有计数器
+                int *privateClusterSizes = new int[k]();
+                double **privateNewCentroids = new double*[k];
+                for (int i = 0; i < k; i++)
                 {
-                    centroids[cluster][j] += dataSet[i][j];
+                    privateNewCentroids[i] = new double[features]();
                 }
+                
+                // 并行处理所有样本点
+                #pragma omp for nowait
+                for (int i = 0; i < samples; i++)
+                {
+                    int cluster = labels[i];
+                    privateClusterSizes[cluster]++;
+                    
+                    for (int j = 0; j < features; j++)
+                    {
+                        privateNewCentroids[cluster][j] += dataSet[i][j];
+                    }
+                }
+                
+                // 合并结果到共享变量
+                #pragma omp critical
+                {
+                    for (int i = 0; i < k; i++)
+                    {
+                        clusterSizes[i] += privateClusterSizes[i];
+                        for (int j = 0; j < features; j++)
+                        {
+                            newCentroids[i][j] += privateNewCentroids[i][j];
+                        }
+                    }
+                }
+                
+                // 清理私有数据
+                for (int i = 0; i < k; i++)
+                {
+                    delete[] privateNewCentroids[i];
+                }
+                delete[] privateNewCentroids;
+                delete[] privateClusterSizes;
             }
 
-            // 计算平均值
+            // 5. 计算平均值，更新质心
             for (int i = 0; i < k; i++)
             {
                 if (clusterSizes[i] > 0)
-                { // 防止除以零
+                {
                     for (int j = 0; j < features; j++)
                     {
-                        centroids[i][j] /= clusterSizes[i];
+                        centroids[i][j] = newCentroids[i][j] / clusterSizes[i];
                     }
                 }
             }
 
-            // 释放旧质心内存
-            for (int i = 0; i < k; i++)
+            // 6. 检查是否收敛
+            converged = true;
+            for (int i = 0; i < k && converged; i++)
             {
-                delete[] oldCentroids[i];
+                double dist = euclideanDistance(centroids[i], oldCentroids[i]);
+                if (dist > tolerance)
+                {
+                    converged = false;
+                }
             }
-            delete[] oldCentroids;
-            delete[] clusterSizes;
         }
+        
+        // 释放临时内存
+        for (int i = 0; i < k; i++)
+        {
+            delete[] oldCentroids[i];
+            delete[] newCentroids[i];
+        }
+        delete[] oldCentroids;
+        delete[] newCentroids;
+        delete[] clusterSizes;
     }
 
     // 计算总体误差（每个点到其对应质心的距离平方和）
     double getTotalError()
     {
         double totalError = 0.0;
-        for (int i = 0; i < samples; i++)
+        
+        #pragma omp parallel reduction(+:totalError)
         {
-            int cluster = labels[i];
-            totalError += pow(euclideanDistance(dataSet[i], centroids[cluster]), 2);
+            #pragma omp for 
+            for (int i = 0; i < samples; i++)
+            {
+                int cluster = labels[i];
+                double dist = euclideanDistance(dataSet[i], centroids[cluster]);
+                totalError += dist * dist;
+            }
         }
+        
         return totalError;
     }
 };
