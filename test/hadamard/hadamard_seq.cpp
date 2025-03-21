@@ -1,5 +1,4 @@
 #include <iostream>
-#include <omp.h>
 #include <stdlib.h>
 #include <sys/time.h>
 
@@ -22,7 +21,6 @@ int main(int argc, char **argv) {
     struct timeval start, end;
     int i,j;
     gettimeofday(&start, NULL);
-    #pragma omp parallel for simd shared(a,b,c) private(j,i)
     for( j = 0; j < dim; ++j){
         for( i = 0; i < dim; ++i)
         {
@@ -30,9 +28,8 @@ int main(int argc, char **argv) {
         }
     }
     gettimeofday(&end, NULL);
-    double milliseconds = (end.tv_sec - start.tv_sec)*1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+    double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
     std::cout << milliseconds << std::endl;
-
     delete [] a;
     delete [] b;
     delete [] c;
