@@ -216,7 +216,7 @@ int main(int argc, char **argv)
     double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
     std::cout << milliseconds << std::endl;
 
-    double error = kms.getTotalError();
-    std::cout << "Total error: " << error << std::endl;
+    //double error = kms.getTotalError();
+    //std::cout << "Total error: " << error << std::endl;
     return 0;
 }

@@ -88,10 +88,10 @@ int main(int argc, char **argv){
     double seconds = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
     std::cout << seconds << std::endl;
     auto res = data3->get_cdata();
-    for(int i = 0; i < length; ++i) {
+    /*for(int i = 0; i < length; ++i) {
         // if(i && i % 16 == 0) std::cout << std::endl;
         std::cout <<(data1->get_cdata())[i] << " " <<(data2->get_cdata())[i] << " "<< res[i] << std::endl;
-    }
+    }*/
 
     delete user;
     delete data1;
