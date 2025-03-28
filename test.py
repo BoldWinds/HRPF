@@ -92,5 +92,5 @@ def process_output_to_excel(output_string, output_file=None):
             df.to_excel(writer, sheet_name=sheet_name, index=False)
 
 # Run the script and print the output
-output = run_shell_script('./eval.sh', '10')
+output = run_shell_script('./eval.sh', '1')
 process_output_to_excel(output)

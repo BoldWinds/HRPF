@@ -45,10 +45,10 @@ int main(int argc, char **argv){
     data->access(Runtime::get_instance().get_cpu(), MemAccess::R);
     gettimeofday(&end, NULL);
 
-    double seconds = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    std::cout << seconds << std::endl;
+    double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+    std::cout << milliseconds << std::endl;
     // data->access(Runtime::get_instance().get_cpu(), MemAccess::R);
-    _TYPE* dd = data->get_cdata();
+    //_TYPE* dd = data->get_cdata();
 
     // for(int i = 0;  i < length; ++i){
     // 	std::cout << dd[i] <<" ";

@@ -54,14 +54,6 @@ void cpu_sort(Basedata_t* data) {
     int m_len = d->ha->length();
     auto m_data = d->ha->get_cdata();
     hsort(m_data, m_len);
-	//std::sort(m_data, m_data+m_len);
-	//thrust::sort(m_data, m_data + m_len);
-	/*
-	std::cout << "cpu sort...:" << m_len  << std::endl;
-	for(int i = 0; i < m_len; ++i){
-		std::cout << m_data[i] << std::endl;
-	}
-	*/
 }
 
 /***************************
@@ -104,24 +96,7 @@ void merge_cpu(Basedata_t* data) {
     auto src_dataB = src_dataA + lenA;
     auto dst_data = new _TYPE[len]; 
     int lenB =  len - lenA;
-    hmerge(src_dataA, src_dataB, dst_data, lenA);
-	/*
-	std::cout << lenA << " " << len << std::endl;
-	for(int i =0;i<lenA; i++){
-		std::cout << src_dataA[i] << std::endl;
-	}
-	*/
-	// int i = 0;
-    // int j = 0;
-    // int k = 0;
-    // while(i < lenA || j < len) {
-    //     if(j == len) dst_data[k] = src_dataA[i++];
-    //     else if(i == lenA) dst_data[k] = src_dataB[j++];
-    //     else if(src_dataA[i] < src_dataB[j]) dst_data[k] = src_dataA[i++];
-    //     else dst_data[k] = src_dataB[j++];
-    //     k++;
-    // }
-
+    hmerge(src_dataA, src_dataB, dst_data, lenA, lenB);
     memcpy(src_dataA, dst_data, sizeof(_TYPE) * len);
     delete dst_data;
 }
@@ -135,12 +110,13 @@ void merge_gpu(Basedata_t* data) {
     auto second = d->ha->get_child(1);
     int len = d->ha->length();
     int lenA = first->length();
+    int lenB = len - lenA;
     auto src_dataA = d->ha->get_gdata();
     auto src_dataB = src_dataA + lenA;
     _TYPE* dst_data;
 	int size = len*sizeof(_TYPE);
 	cudaMalloc((void**)&dst_data, size);
-	gmerge(src_dataA, src_dataB, dst_data, lenA, stream());
+	gmerge(src_dataA, src_dataB, dst_data, lenA, lenB, stream());
 	cudaMemcpy(src_dataA, dst_data, size, cudaMemcpyDeviceToDevice);
 	cudaFree(dst_data);
 }

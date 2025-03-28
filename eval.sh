@@ -1,27 +1,28 @@
 #!/usr/bin/zsh
 MAX_RUN=$1
 
-# echo "MergeSort"
-# echo "LENGTH,SEQ,STD,GPU,THRUST,HRPF"
-# for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
-#     echo $LENGTH
-#     ./build/bin/merge_sort/ms_seq $LENGTH $MAX_RUN
-#     ./build/bin/merge_sort/ms_std $LENGTH $MAX_RUN
-#     ./build/bin/merge_sort/ms_gpu $LENGTH $MAX_RUN
-#     ./build/bin/merge_sort/ms_thrust $LENGTH $MAX_RUN
-#     ./build/bin/merge_sort/ms_hrpf $LENGTH "BBBBBBBBBB"
-# done
 
-# echo "strassen"
-# echo "LENGTH,SEQ,STD,GPU,THRUST,HRPF"
-# for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
-#     echo $LENGTH
-#     ./build/bin/strassen/matmul_omp     $LENGTH $MAX_RUN
-#     ./build/bin/strassen/matmul_cublas  $LENGTH $MAX_RUN
-#     ./build/bin/strassen/matmul_starpu  $LENGTH $MAX_RUN
-#     ./build/bin/strassen/matmul_mkl     $LENGTH $MAX_RUN
-#     ./build/bin/strassen/strassen_hrpf  $LENGTH "BBBBBBBBBB"
-# done
+echo "MergeSort"
+echo "LENGTH,SEQ,STD"
+for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
+    echo $LENGTH
+    ./build/bin/merge_sort/ms_seq $LENGTH
+    ./build/bin/merge_sort/ms_std $LENGTH
+    ./build/bin/merge_sort/ms_gpu $LENGTH
+    ./build/bin/merge_sort/ms_hrpf $LENGTH "BBBBBBBBBBBBBBBBBBB"
+done
+
+
+echo "strassen"
+echo "LENGTH,SEQ,OMP,STARPU,MKL"
+for (( LENGTH=10240; LENGTH<=19456; LENGTH+=1024)); do
+    echo $LENGTH
+#    ./build/bin/strassen/matmul_seq     $LENGTH
+    ./build/bin/strassen/matmul_omp     $LENGTH
+#    ./build/bin/strassen/matmul_starpu  $LENGTH
+    ./build/bin/strassen/matmul_mkl     $LENGTH
+#    ./build/bin/strassen/strassen_hrpf  $LENGTH "BBBBBBBBBB"
+done
 
 
 echo "hadamard"

@@ -95,7 +95,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
 # 链接外部库（根据 Makefile LDFLAGS）
 # -------------------------------
 target_link_libraries(hrpf PUBLIC
-    ${CMAKE_SOURCE_DIR}/lib/libcudaMerge.so  # 本项目的自定义 CUDA 库
+#    ${CMAKE_SOURCE_DIR}/lib/libcudaMerge.so  # 本项目的自定义 CUDA 库
     cudart                                    # CUDA Runtime
     cublas                                    # cuBLAS 库
     iomp5                                     # Intel OpenMP

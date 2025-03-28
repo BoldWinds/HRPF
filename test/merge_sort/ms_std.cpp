@@ -20,18 +20,13 @@ void loadData(double* datar, int length) {
 
 int main(int argc, char** argv){
     int n = std::atoi(argv[1]);
-    int max_run = std::atoi(argv[2]);
     double* data = new double[n];
     loadData(data, n);
-    double milliseconds = 0;
 
-    for(int run = 0; run < max_run; run++){
-        struct timeval start, end;
-        gettimeofday(&start, NULL);
-        std::sort(data, data+n);
-        gettimeofday(&end, NULL);
-        milliseconds += (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
-    }
-    milliseconds /= max_run;
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+    std::sort(data, data+n);
+    gettimeofday(&end, NULL);
+    double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
     std::cout << milliseconds << std::endl;
 }
