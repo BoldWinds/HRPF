@@ -3,7 +3,7 @@ MAX_RUN=$1
 
 
 echo "MergeSort"
-echo "LENGTH,SEQ,STD"
+echo "LENGTH,SEQ,STD,GPU,HRPF"
 for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
     echo $LENGTH
     ./build/bin/merge_sort/ms_seq $LENGTH
@@ -11,18 +11,20 @@ for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
     ./build/bin/merge_sort/ms_gpu $LENGTH
     ./build/bin/merge_sort/ms_hrpf $LENGTH "BBBBBBBBBBBBBBBBBBB"
 done
+echo ""
 
 
-echo "strassen"
-echo "LENGTH,SEQ,OMP,STARPU,MKL"
-for (( LENGTH=10240; LENGTH<=19456; LENGTH+=1024)); do
-    echo $LENGTH
+#echo "strassen"
+#echo "LENGTH,SEQ,OMP,STARPU,MKL"
+#for (( LENGTH=10240; LENGTH<=19456; LENGTH+=1024)); do
+#    echo $LENGTH
 #    ./build/bin/strassen/matmul_seq     $LENGTH
-    ./build/bin/strassen/matmul_omp     $LENGTH
+#    ./build/bin/strassen/matmul_omp     $LENGTH
 #    ./build/bin/strassen/matmul_starpu  $LENGTH
-    ./build/bin/strassen/matmul_mkl     $LENGTH
+#    ./build/bin/strassen/matmul_mkl     $LENGTH
 #    ./build/bin/strassen/strassen_hrpf  $LENGTH "BBBBBBBBBB"
-done
+#done
+#echo ""
 
 
 echo "hadamard"
