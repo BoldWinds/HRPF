@@ -22,7 +22,7 @@ echo ""
 #    ./build/bin/strassen/matmul_omp     $LENGTH
 #    ./build/bin/strassen/matmul_starpu  $LENGTH
 #    ./build/bin/strassen/matmul_mkl     $LENGTH
-#    ./build/bin/strassen/strassen_hrpf  $LENGTH "BBBBBBBBBB"
+#    ./build/bin/strassen/strassen_hrpf  $LENGTH "BBBBBBBBBBBBBBBB"
 #done
 #echo ""
 
