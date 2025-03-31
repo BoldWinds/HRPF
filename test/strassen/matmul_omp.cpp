@@ -2,10 +2,11 @@
 #include <chrono>
 #include <omp.h>
 
-double matmul_openmp(int n, int max_run) {
+double matmul_openmp(int n) {
     double *A = new double[n * n];
     double *B = new double[n * n];
     double *C = new double[n * n];
+    double *BT = new double[n * n];
 
     for (int i = 0; i < n * n; i++) {
         A[i] = static_cast<double>(rand()) / RAND_MAX;
@@ -14,14 +15,18 @@ double matmul_openmp(int n, int max_run) {
     }
 
     auto start = std::chrono::high_resolution_clock::now();
-
-    for (int run = 0; run < max_run; ++run) {
-        #pragma omp parallel for collapse(2)
-        for (int i = 0; i < n; ++i) {
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            BT[j * n + i] = B[i * n + j];
+        }
+    }
+    #pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+        for (int k = 0; k < n; ++k) {
+            double Aik = A[i * n + k];  // 预加载 A[i, k]，避免重复读取
             for (int j = 0; j < n; ++j) {
-                for (int k = 0; k < n; ++k) {
-                    C[i * n + j] += A[i * n + k] * B[k * n + j];
-                }
+                C[i * n + j] += Aik * BT[j * n + k];  // 访问 BT 而不是 B，提升缓存局部性
             }
         }
     }
@@ -33,13 +38,12 @@ double matmul_openmp(int n, int max_run) {
     delete[] B;
     delete[] C;
 
-    return duration.count() / max_run;
+    return duration.count();
 }
 
 int main(int argc, char* argv[]) {
     int n = std::stoi(argv[1]);
-    int max_run = std::stoi(argv[2]);
-    double milliseconds = matmul_openmp(n, max_run);
+    double milliseconds = matmul_openmp(n);
     std::cout <<  milliseconds << std::endl;
     return 0;
 }

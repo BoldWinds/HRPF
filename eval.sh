@@ -14,17 +14,17 @@ done
 echo ""
 
 
-#echo "strassen"
-#echo "LENGTH,SEQ,OMP,STARPU,MKL"
-#for (( LENGTH=10240; LENGTH<=19456; LENGTH+=1024)); do
-#    echo $LENGTH
-#    ./build/bin/strassen/matmul_seq     $LENGTH
-#    ./build/bin/strassen/matmul_omp     $LENGTH
-#    ./build/bin/strassen/matmul_starpu  $LENGTH
-#    ./build/bin/strassen/matmul_mkl     $LENGTH
-#    ./build/bin/strassen/strassen_hrpf  $LENGTH "BBBBBBBBBBBBBBBB"
-#done
-#echo ""
+echo "strassen"
+echo "LENGTH,SEQ,OMP,STARPU,MKL"
+for (( LENGTH=1024; LENGTH<=2048; LENGTH+=128)); do
+   echo $LENGTH
+   ./build/bin/strassen/matmul_seq     $LENGTH
+   ./build/bin/strassen/matmul_omp     $LENGTH
+   ./build/bin/strassen/matmul_starpu  $LENGTH
+   ./build/bin/strassen/matmul_mkl     $LENGTH
+#   ./build/bin/strassen/strassen_hrpf  $LENGTH "BBBBBBBBBBBBBBBB"
+done
+echo ""
 
 
 echo "hadamard"
