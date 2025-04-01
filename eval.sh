@@ -9,20 +9,20 @@ for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
     ./build/bin/merge_sort/ms_seq $LENGTH
     ./build/bin/merge_sort/ms_std $LENGTH
     ./build/bin/merge_sort/ms_gpu $LENGTH
-    ./build/bin/merge_sort/ms_hrpf $LENGTH "BBBBBBBBBBBBBBBBBBB"
+    ./build/bin/merge_sort/ms_hrpf $LENGTH "BBB"
 done
 echo ""
 
 
 echo "strassen"
-echo "LENGTH,SEQ,OMP,STARPU,MKL"
+echo "LENGTH,SEQ,OMP,STARPU,MKL,HRPF"
 for (( LENGTH=1024; LENGTH<=2048; LENGTH+=128)); do
    echo $LENGTH
    ./build/bin/strassen/matmul_seq     $LENGTH
    ./build/bin/strassen/matmul_omp     $LENGTH
    ./build/bin/strassen/matmul_starpu  $LENGTH
    ./build/bin/strassen/matmul_mkl     $LENGTH
-#   ./build/bin/strassen/strassen_hrpf  $LENGTH "BBBBBBBBBBBBBBBB"
+   ./build/bin/strassen/strassen_hrpf  $LENGTH "B"
 done
 echo ""
 
