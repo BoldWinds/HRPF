@@ -1,6 +1,17 @@
 #!/usr/bin/zsh
 MAX_RUN=$1
 
+echo "QuickSort"
+echo "LENGTH,SEQ,STD,HRPF"
+for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
+    echo $LENGTH
+    ./build/bin/quick_sort/qs_seq $LENGTH
+    ./build/bin/quick_sort/qs_std $LENGTH
+#    ./build/bin/quick_sort/qs_gpu $LENGTH
+    ./build/bin/quick_sort/qs_hrpf $LENGTH "BBB"
+done
+echo ""
+
 
 echo "MergeSort"
 echo "LENGTH,SEQ,STD,GPU,HRPF"

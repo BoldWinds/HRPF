@@ -51,7 +51,7 @@ endif()
 # 设置 CUDA 编译标志
 # -------------------------------
 set(CMAKE_CUDA_ARCHITECTURES 89)
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fPIC")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fPIC --extended-lambda")
 
 # -------------------------------
 # 添加包含目录（根据 Makefile INCLUDE 变量）

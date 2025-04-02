@@ -173,7 +173,7 @@ void ArrayList::build_xchilds(int index) {
   if (childs_[0] != nullptr)
     return;
   childs_[0] = new ArrayList(this, 0, index);
-  childs_[0] = new ArrayList(this, index, length_ - index);
+  childs_[1] = new ArrayList(this, index, length_ - index);
 }
 
 ArrayList::ArrayPair_t &ArrayList::get_cpu_pair() { return cpu_pair_; }
