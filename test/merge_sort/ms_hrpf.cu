@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include "algorithm/utils.h"
 #include "framework/framework.h"
 #include "algorithm/merge_sort/mergeSortProblem.h"
 #include "tool/initializer.h"
@@ -35,7 +36,7 @@ int main(int argc, char **argv){
     loadData(data->get_cdata(), length);
     // initialize(data, length);
     Framework::init();
-    MergesortProblem* problem = new MergesortProblem(new MergeData_t(data), cpu_sort, gpu_sort, nullptr);
+    MergesortProblem* problem = new MergesortProblem(new MergeData_t(data), ms_cpu_sort, ms_gpu_sort, nullptr);
     //std::string mask = "10";
     //problem->set_mask(mask);
     // std::cout << "init problem & threads end" << std::endl;

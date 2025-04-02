@@ -48,7 +48,7 @@ void MergesortProblem::IO(Basedata_t* m_data) {
 /***************************
 * cpu sort operation
 ***************************/
-void cpu_sort(Basedata_t* data) {
+void ms_cpu_sort(Basedata_t* data) {
 	//	std::cout << "cpu sort." << std::endl;
 	auto d = (MergeData_t*)data;
     int m_len = d->ha->length();
@@ -59,7 +59,7 @@ void cpu_sort(Basedata_t* data) {
 /***************************
 * gpu sort operation
 ***************************/
-void gpu_sort(Basedata_t* data) { 
+void ms_gpu_sort(Basedata_t* data) { 
 	//std::cout << "gpu sort..." << std::endl;
     auto d = (MergeData_t*)data;
     int m_len = d->ha->length();
@@ -86,7 +86,7 @@ void gpu_sort(Basedata_t* data) {
 /***************************
 * cpu merge operation
 ***************************/
-void merge_cpu(Basedata_t* data) {
+void ms_merge_cpu(Basedata_t* data) {
     auto d = (MergeData_t*)data;
     auto first = d->ha->get_child(0);
     auto second = d->ha->get_child(1);
@@ -104,7 +104,7 @@ void merge_cpu(Basedata_t* data) {
 /***************************
 * gpu merge operation
 ***************************/
-void merge_gpu(Basedata_t* data) {
+void ms_merge_gpu(Basedata_t* data) {
     auto d = (MergeData_t*)data;
     auto first = d->ha->get_child(0);
     auto second = d->ha->get_child(1);
@@ -131,8 +131,8 @@ std::vector<Problem*> MergesortProblem::split() {
     auto second = d->ha->get_child(1);
     
     std::vector<Problem*> tasks(2);
-    tasks[0] = new MergesortProblem(new MergeData_t(first), cpu_sort, gpu_sort, this);
-    tasks[1] = new MergesortProblem(new MergeData_t(second), cpu_sort, gpu_sort, this);
+    tasks[0] = new MergesortProblem(new MergeData_t(first), ms_cpu_sort, ms_gpu_sort, this);
+    tasks[1] = new MergesortProblem(new MergeData_t(second), ms_cpu_sort, ms_gpu_sort, this);
     return tasks;
 }
 
@@ -142,7 +142,7 @@ std::vector<Problem*> MergesortProblem::split() {
 void MergesortProblem::merge(std::vector<Problem*>& subproblems)  {
     auto d = (MergeData_t*)data;
     // run_task(new MergeData_t(d->ha), merge_cpu, merge_gpu);//
-    MergesortProblem* merge_p = new MergesortProblem(new MergeData_t(d->ha), merge_cpu, merge_gpu, this);
+    MergesortProblem* merge_p = new MergesortProblem(new MergeData_t(d->ha), ms_merge_cpu, ms_merge_gpu, this);
     //merge_p->record_device('g');
     merge_p->runAsc('g');
 }

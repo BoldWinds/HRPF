@@ -1,12 +1,10 @@
 #pragma once
 
-//#include <thrust/sort.h>
-
 #include "framework/problem.h"
 #include "framework/task.h"
 #include "common/gpu_device.h"
 #include "datastructure/arraylist.h"
-#include "cuMerge.h"
+#include "algorithm/utils.h"
 #include <string>
 //void set_mask(std::string mask);
 struct MergeData_t : public Basedata_t{
@@ -45,7 +43,7 @@ public:
 
 #define MergeSort_t MergesortProblem
 
-void cpu_sort(Basedata_t*);
-void gpu_sort(Basedata_t*);
-void merge_cpu(Basedata_t*);
-void merge_gpu(Basedata_t*);
+void ms_cpu_sort(Basedata_t* data);
+void ms_gpu_sort(Basedata_t* data);
+void ms_merge_cpu(Basedata_t* data);
+void ms_merge_gpu(Basedata_t* data);
