@@ -7,7 +7,7 @@
 #include <sys/time.h>
 #include <fstream>
 
-const int THRESHOLD = 1024*8;
+const int THRESHOLD = 1024*16;
 
 void loadData(double* datar, int length) {
     std::ifstream fin;
@@ -24,7 +24,7 @@ void loadData(double* datar, int length) {
     }
 }
 
-void gpu_merge_sort(thrust::device_vector<int>& d_vec) {
+void gpu_merge_sort(thrust::device_vector<double>& d_vec) {
     int n = d_vec.size();
     if (n <= 1) return;
 
@@ -34,8 +34,8 @@ void gpu_merge_sort(thrust::device_vector<int>& d_vec) {
     }
 
     int mid = n / 2;
-    thrust::device_vector<int> left(d_vec.begin(), d_vec.begin() + mid);
-    thrust::device_vector<int> right(d_vec.begin() + mid, d_vec.end());
+    thrust::device_vector<double> left(d_vec.begin(), d_vec.begin() + mid);
+    thrust::device_vector<double> right(d_vec.begin() + mid, d_vec.end());
 
     gpu_merge_sort(left);
     gpu_merge_sort(right);
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
     int n = std::atoi(argv[1]);
     double* data = new double[n];
     loadData(data, n);
-    thrust::device_vector<int> d_vec(data, data + n);
+    thrust::device_vector<double> d_vec(data, data + n);
 
     struct timeval start, end;
     gettimeofday(&start, NULL);
