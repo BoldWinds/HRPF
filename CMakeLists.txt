@@ -4,9 +4,9 @@ project(hrpf LANGUAGES CXX CUDA)
 # -------------------------------
 # 设置 C++ 和 CUDA 标准
 # -------------------------------
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 # -------------------------------
