@@ -1,21 +1,16 @@
 #include <iostream>
-#include <fstream>
+#include <random>
+#include <execution>
 #include <algorithm>
 #include <sys/time.h>
 
-void loadData(double* datar, int length) {
-    std::ifstream fin;
-    fin.open("./data/datamer.txt");
+void loadData(double *datar, int length) {
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
 
-    if(!fin)
-    {
-        std::cout<<"can not open the file data.txt"<<std::endl;
-        exit(1);
-    }
-
-    for(int i = 0; i < length; ++i){
-        fin >> datar[i];
-    }
+    std::for_each(std::execution::par_unseq, datar, datar + length, [&](double &val) {
+        val = dist(rng);
+    });
 }
 
 int main(int argc, char** argv){

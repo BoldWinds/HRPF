@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <execution>
 
-#define THRESHOLD 1024*32
+#define THRESHOLD 1024*20
 
 int getRandomIndex(int min, int max) {
     std::random_device rd;
