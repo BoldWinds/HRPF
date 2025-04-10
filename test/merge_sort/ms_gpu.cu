@@ -8,7 +8,7 @@
 #include <random>
 #include <execution>
 
-const int THRESHOLD = 1024*16;
+const int THRESHOLD = 1024*8;
 
 void loadData(double *datar, int length) {
     std::mt19937 rng(std::random_device{}());

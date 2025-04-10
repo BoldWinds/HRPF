@@ -2,25 +2,27 @@
 MAX_RUN=$1
 
 echo "QuickSort"
-echo "LENGTH,SEQ,STD,OMP,GPU"
+echo "LENGTH,SEQ,STD,OMP,GPU,STARPU"
 for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
     echo $LENGTH
     ./build/bin/quick_sort/qs_seq $LENGTH
     ./build/bin/quick_sort/qs_std $LENGTH
     ./build/bin/quick_sort/qs_omp $LENGTH $MAX_RUN
     ./build/bin/quick_sort/qs_gpu $LENGTH
+    ./build/bin/quick_sort/qs_starpu $LENGTH $MAX_RUN
 done
 echo ""
 
 
 echo "MergeSort"
-echo "LENGTH,SEQ,STD,OMP,GPU,HRPF"
+echo "LENGTH,SEQ,STD,OMP,GPU,STARPU,HRPF"
 for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
     echo $LENGTH
     ./build/bin/merge_sort/ms_seq $LENGTH
     ./build/bin/merge_sort/ms_std $LENGTH
     ./build/bin/merge_sort/ms_omp $LENGTH $MAX_RUN
     ./build/bin/merge_sort/ms_gpu $LENGTH
+    ./build/bin/merge_sort/ms_starpu $LENGTH $MAX_RUN
     ./build/bin/merge_sort/ms_hrpf $LENGTH "BBB"
 done
 echo ""
