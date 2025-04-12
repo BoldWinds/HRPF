@@ -1,129 +1,201 @@
 #include <iostream>
 #include <chrono>
 #include <starpu.h>
-#include <stdio.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <cstdlib>
-#include <cstring>
-#include <thrust/device_ptr.h>
-#include <thrust/sort.h>
-#include <cuda_runtime.h>
+#include <random>
+#include <execution>
+#include "algorithm/utils.h"
 
-// 辅助函数：归并两个有序区间
-void merge(double *A, int left, int mid, int right, double* temp) {
-    int i = left, j = mid + 1, k = left;
-    while(i <= mid && j <= right) {
-        if (A[i] <= A[j]) {
-            temp[k++] = A[i++];
-        } else {
-            temp[k++] = A[j++];
-        }
-    }
-    while (i <= mid)
-        temp[k++] = A[i++];
-    while (j <= right)
-        temp[k++] = A[j++];
-    // 复制回原数组
-    for (int p = left; p <= right; p++)
-        A[p] = temp[p];
-}
+#define THRESHOLD 1024*256
 
-// 递归实现归并排序（CPU 版本）
-void merge_sort_recursive(double* A, int left, int right, double* temp) {
-    if (left >= right) return;
-    int mid = left + (right - left) / 2;
-    merge_sort_recursive(A, left, mid, temp);
-    merge_sort_recursive(A, mid+1, right, temp);
-    merge(A, left, mid, right, temp);
-}
-
-// CPU 实现的归并排序 codelet（调用归并排序算法）
-void mergesort_cpu(void *buffers[], void *cl_arg) {
-    double *A = (double *)STARPU_VECTOR_GET_PTR(buffers[0]);
-    unsigned n = STARPU_VECTOR_GET_NX(buffers[0]);
-    double *temp = new double[n];
-    merge_sort_recursive(A, 0, n-1, temp);
-    delete[] temp;
-}
-
-void mergesort_cuda(void *buffers[], void *cl_arg)
+// CPU上的排序任务实现
+void cpu_sort(void *buffers[], void *cl_arg)
 {
-    double *A = (double *)STARPU_VECTOR_GET_PTR(buffers[0]);
-    unsigned n = STARPU_VECTOR_GET_NX(buffers[0]);
-    thrust::device_ptr<double> dev_ptr = thrust::device_pointer_cast(A);
-    thrust::sort(dev_ptr, dev_ptr + n);
+    struct starpu_vector_interface *vector = (struct starpu_vector_interface *)buffers[0];
+    _TYPE *data = (_TYPE *)STARPU_VECTOR_GET_PTR(vector);
+    unsigned int len = STARPU_VECTOR_GET_NX(vector);
+    hsort(data, len);
 }
 
-// 定义 codelet（同时支持 CPU 和 GPU，其中 GPU 版本仅在启用 STARPU_USE_CUDA 时编译）
-struct starpu_codelet cl = {
-    .where = STARPU_CPU | STARPU_CUDA,
-    .cpu_funcs = {mergesort_cpu},
-    .cuda_funcs = {mergesort_cuda},
+// GPU上的排序任务实现
+void gpu_sort(void *buffers[], void *cl_arg)
+{
+    struct starpu_vector_interface *vector = (struct starpu_vector_interface *)buffers[0];
+    _TYPE *data = (_TYPE *)STARPU_VECTOR_GET_PTR(vector);
+    unsigned int len = STARPU_VECTOR_GET_NX(vector);
+    
+    cudaStream_t stream = starpu_cuda_get_local_stream();
+    gsort(data, len, stream);
+}
+
+static struct starpu_codelet sort_cl = {
+    .cpu_funcs = {cpu_sort},
+    .cuda_funcs = {gpu_sort},
     .nbuffers = 1,
-    // 这里注册数据读写权限：排序操作需要读写原始数组
-    .modes = {STARPU_RW}
+    .modes = {STARPU_RW},
+    .name = "sort_codelet"
 };
 
-double mergesort_starpu(int n) {
-    double *A = new double[n];
-    for (int i = 0; i < n; i++) {
-        A[i] = static_cast<double>(rand()) / RAND_MAX;
-    }
-
-    // StarPU 初始化
-    struct starpu_conf conf;
-    starpu_conf_init(&conf);
-    conf.ncuda = 1;
-    conf.nopencl = 0;
-    conf.calibrate = 0;
-    int ret = starpu_init(&conf);
-    if(ret != 0)    return -1;
-    // 注册数据（作为1行n列的矩阵）
-    starpu_data_handle_t A_handle;
-    starpu_vector_data_register(&A_handle, STARPU_MAIN_RAM, (uintptr_t)A, n, sizeof(double));
-
-    // 开始计时
-    auto start = std::chrono::high_resolution_clock::now();
-
-    // 插入排序任务。通过 cl_arg 传入待排序数组长度。
-    starpu_insert_task(&cl,
-                         STARPU_RW, A_handle,
-                         0, &n);
-    starpu_task_wait_for_all();
-
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> duration = end - start;
-
-    // 清理资源
-    starpu_data_unregister(A_handle);
-    delete[] A;
-    starpu_shutdown();
-
-    return duration.count();
+// CPU上的合并任务实现
+void cpu_merge(void *buffers[], void *cl_arg)
+{
+    struct starpu_vector_interface *vector1 = (struct starpu_vector_interface *)buffers[0];
+    struct starpu_vector_interface *vector2 = (struct starpu_vector_interface *)buffers[1];
+    struct starpu_vector_interface *vector_dst = (struct starpu_vector_interface *)buffers[2];
+    
+    _TYPE *first = (_TYPE *)STARPU_VECTOR_GET_PTR(vector1);
+    _TYPE *second = (_TYPE *)STARPU_VECTOR_GET_PTR(vector2);
+    _TYPE *dst = (_TYPE *)STARPU_VECTOR_GET_PTR(vector_dst);
+    
+    unsigned int lenA = STARPU_VECTOR_GET_NX(vector1);
+    unsigned int lenB = STARPU_VECTOR_GET_NX(vector2);
+    
+    hmerge(first, second, dst, lenA, lenB);
 }
 
-int main(int argc, char* argv[]) {
+// GPU上的合并任务实现
+void gpu_merge(void *buffers[], void *cl_arg)
+{
+    struct starpu_vector_interface *vector1 = (struct starpu_vector_interface *)buffers[0];
+    struct starpu_vector_interface *vector2 = (struct starpu_vector_interface *)buffers[1];
+    struct starpu_vector_interface *vector_dst = (struct starpu_vector_interface *)buffers[2];
+    
+    _TYPE *first = (_TYPE *)STARPU_VECTOR_GET_PTR(vector1);
+    _TYPE *second = (_TYPE *)STARPU_VECTOR_GET_PTR(vector2);
+    _TYPE *dst = (_TYPE *)STARPU_VECTOR_GET_PTR(vector_dst);
+    
+    unsigned int lenA = STARPU_VECTOR_GET_NX(vector1);
+    unsigned int lenB = STARPU_VECTOR_GET_NX(vector2);
+    
+    cudaStream_t stream = starpu_cuda_get_local_stream();
+    gmerge(first, second, dst, lenA, lenB, stream);
+}
+
+static struct starpu_codelet merge_cl = {
+    .cpu_funcs = {cpu_merge},
+    .cuda_funcs = {gpu_merge},
+    .nbuffers = 3,
+    .modes = {STARPU_R, STARPU_R, STARPU_W},
+    .name = "merge_codelet"
+};
+
+
+void heterogeneous_mergesort(starpu_data_handle_t data_handle, unsigned int len)
+{
+    if (len <= THRESHOLD) {
+        struct starpu_task *task = starpu_task_create();
+        task->cl = &sort_cl;
+        task->handles[0] = data_handle;
+        
+        int ret = starpu_task_submit(task);
+        if (ret == -ENODEV) {
+            fprintf(stderr, "No worker can execute this task\n");
+            exit(1);
+        }
+        
+        return;
+    }
+    
+    // 分割数据
+    unsigned int mid = len / 2;
+    _TYPE *left_array, *right_array;
+    starpu_data_handle_t left_handle, right_handle;
+    starpu_malloc((void**)&left_array, mid * sizeof(_TYPE));
+    starpu_malloc((void**)&right_array, (len - mid) * sizeof(_TYPE));
+    _TYPE *original_data = (_TYPE *)starpu_data_get_local_ptr(data_handle);
+    memcpy(left_array, original_data, mid * sizeof(_TYPE));
+    memcpy(right_array, original_data + mid, (len - mid) * sizeof(_TYPE));
+    starpu_vector_data_register(&left_handle, STARPU_MAIN_RAM, (uintptr_t)left_array, mid, sizeof(_TYPE));
+    starpu_vector_data_register(&right_handle, STARPU_MAIN_RAM, (uintptr_t)right_array, len - mid, sizeof(_TYPE));
+
+    // 递归
+    heterogeneous_mergesort(left_handle, mid);
+    heterogeneous_mergesort(right_handle, len - mid);
+
+    // 等待左右两部分排序完成
+    starpu_data_acquire(left_handle, STARPU_R);
+    starpu_data_acquire(right_handle, STARPU_R);
+    starpu_data_release(left_handle);
+    starpu_data_release(right_handle);
+    
+    // 提交合并任务
+    struct starpu_task *merge_task = starpu_task_create();
+    merge_task->cl = &merge_cl;
+    merge_task->handles[0] = left_handle;
+    merge_task->handles[1] = right_handle;
+    merge_task->handles[2] = data_handle;
+
+    int ret = starpu_task_submit(merge_task);
+    if (ret == -ENODEV) {
+        fprintf(stderr, "No worker can execute this merge task\n");
+        exit(1);
+    }
+    
+    // 等待合并完成
+    starpu_task_wait_for_all();
+
+    starpu_data_unregister(left_handle);
+    starpu_data_unregister(right_handle);
+    starpu_free_noflag(left_array, mid);
+    starpu_free_noflag(right_array, len - mid);
+
+}
+
+
+int main(int argc, char **argv)
+{
+
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << " array_size" << std::endl;
         return -1;
     }
     int n = std::stoi(argv[1]);
     int max_run = std::stoi(argv[2]);
+
     // 重定向 StarPU 输出(隐藏 StarPU 日志)
     int saved_stderr = dup(STDERR_FILENO);
     int dev_null = open("/dev/null", O_WRONLY);
     dup2(dev_null, STDERR_FILENO);
     close(dev_null);
 
+    struct starpu_conf conf;
+    starpu_conf_init(&conf);
+    conf.ncpus = -1;  // 使用所有可用CPU
+    conf.ncuda = -1;  // 使用所有可用CUDA设备
+    conf.nopencl = 0; // 不使用OpenCL
+    int ret = starpu_init(&conf);
+    conf.sched_policy_name = "dmda";
+    if (ret != 0) {
+        fprintf(stderr, "StarPU initialization failed: %s\n", strerror(-ret));
+        return 1;
+    }
+    
+    _TYPE *array;
+    
+
     double milliseconds = 0;
     for(int i = 0; i < max_run; i++) {
-        milliseconds += mergesort_starpu(n);
+        starpu_malloc((void**)&array, n * sizeof(_TYPE));
+        std::mt19937 rng(std::random_device{}());
+        std::uniform_real_distribution<double> dist(0.0, 1.0);
+        std::for_each(std::execution::par_unseq, array, array + n, [&](double &val) {
+            val = dist(rng);
+        });
+        starpu_data_handle_t array_handle;
+        starpu_vector_data_register(&array_handle, STARPU_MAIN_RAM, (uintptr_t)array, n, sizeof(_TYPE));
+        auto start = std::chrono::high_resolution_clock::now();
+        heterogeneous_mergesort(array_handle, n);
+        starpu_task_wait_for_all();
+        auto end = std::chrono::high_resolution_clock::now();
+        milliseconds += std::chrono::duration<double, std::milli>(end - start).count();
+        starpu_data_unregister(array_handle);
+        starpu_free_noflag(array, n);
     }
     milliseconds /= max_run;
 
     dup2(saved_stderr, STDERR_FILENO);
     close(saved_stderr);
     std::cout << milliseconds << std::endl;
+    starpu_shutdown();
     return 0;
 }

@@ -1,6 +1,20 @@
 #!/usr/bin/zsh
 MAX_RUN=$1
 
+echo "strassen"
+echo "LENGTH,SEQ,OMP,MKL,GPU,CUBLAS,STARPU,HRPF"
+for (( LENGTH=1024; LENGTH<=6144; LENGTH+=512)); do
+   echo $LENGTH
+   ./build/bin/strassen/strassen_seq     $LENGTH $MAX_RUN
+   ./build/bin/strassen/strassen_omp     $LENGTH $MAX_RUN
+    ./build/bin/matmul/matmul_mkl        $LENGTH
+   ./build/bin/strassen/strassen_gpu     $LENGTH $MAX_RUN
+   ./build/bin/matmul/matmul_cublas      $LENGTH $MAX_RUN
+   ./build/bin/strassen/strassen_starpu  $LENGTH $MAX_RUN
+   ./build/bin/strassen/strassen_hrpf    $LENGTH "B"
+done
+echo ""
+
 echo "QuickSort"
 echo "LENGTH,SEQ,STD,OMP,GPU,STARPU"
 for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
@@ -24,19 +38,6 @@ for (( LENGTH=10485670; LENGTH<=104856700; LENGTH+=10485670 )); do
     ./build/bin/merge_sort/ms_gpu $LENGTH
     ./build/bin/merge_sort/ms_starpu $LENGTH $MAX_RUN
     ./build/bin/merge_sort/ms_hrpf $LENGTH "BBB"
-done
-echo ""
-
-
-echo "strassen"
-echo "LENGTH,SEQ,OMP,STARPU,MKL,HRPF"
-for (( LENGTH=1024; LENGTH<=2048; LENGTH+=128)); do
-   echo $LENGTH
-   ./build/bin/strassen/matmul_seq     $LENGTH
-   ./build/bin/strassen/matmul_omp     $LENGTH
-   ./build/bin/strassen/matmul_starpu  $LENGTH
-   ./build/bin/strassen/matmul_mkl     $LENGTH
-   ./build/bin/strassen/strassen_hrpf  $LENGTH "B"
 done
 echo ""
 

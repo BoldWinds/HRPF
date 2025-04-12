@@ -131,6 +131,8 @@ if(BUILD_TESTS)
 
         # 为每个测试源文件生成一个可执行文件，并设置输出目录
         add_executable(${test_name} ${test_file})
+        # 添加源文件所在目录到 include 路径
+        target_include_directories(${test_name} PRIVATE ${test_dir})
         set_target_properties(${test_name} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
         )
