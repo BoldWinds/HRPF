@@ -1,6 +1,8 @@
 #include "algorithm/strassen_problem/cuAdd.h"
 #include <cstdio>
 #include <iostream>
+#include <cublas_v2.h>
+#include <cuda_runtime.h>
 
 #define TILE_SIZE c
 
@@ -112,8 +114,28 @@ void gemm(_TYPE* MatA, _TYPE* MatB, _TYPE* MatC, int dim, int lda, int ldb, int 
     dim3 numBlocks((dim-1) / threadsPerBlock.x +1 , (dim-1) / threadsPerBlock.y + 1);
 
     matmul_kernel<<<numBlocks, threadsPerBlock,0, stream>>> (MatA, MatB, MatC, dim, lda, ldb, ldc);
+}
 
-    // dim3 dimGrid(dim / TILE_SIZE, dim / TILE_SIZE, 1);
-    // dim3 dimBlock(TILE_SIZE, TILE_SIZE, 1);
-    // gpu_Matrix_Mul_shared << <dimGrid, dimBlock, 2048, stream>> > (MatA, MatB, MatC, dim, lda);
+void gemm(double* MatA, double* MatB, double* MatC, int dim, int lda, int ldb, int ldc, cudaStream_t stream, cublasHandle_t handle){
+    // 设置 cuBLAS 使用指定的 CUDA 流
+    cublasSetStream(handle, stream);
+    
+    const double alpha = 1.0;
+    const double beta = 0.0;
+    cublasDgemm(
+        handle,                  // cuBLAS 句柄
+        CUBLAS_OP_N,             // 不转置 B
+        CUBLAS_OP_N,             // 不转置 A
+        dim,                     // C 的行数
+        dim,                     // C 的列数
+        dim,                     // A 的列数/B 的行数
+        &alpha,                  // alpha 系数
+        MatB,                    // B 矩阵
+        ldb,                     // B 的leading dimension
+        MatA,                    // A 矩阵
+        lda,                     // A 的leading dimension
+        &beta,                   // beta 系数
+        MatC,                    // C 矩阵（结果）
+        ldc                      // C 的leading dimension
+    );
 }

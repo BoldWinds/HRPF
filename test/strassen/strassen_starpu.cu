@@ -5,7 +5,7 @@
 #include <random>
 #include <execution>
 #include "algorithm/strassen_problem/cuAdd.h"
-#define THRESHOLD 512
+#define THRESHOLD 1024
 
 // CUDA kernel implementations for StarPU
 void cuda_add(void *buffers[], void *cl_arg) {

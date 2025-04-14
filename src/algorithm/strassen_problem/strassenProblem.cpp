@@ -223,7 +223,7 @@ void gpu_mul(Basedata_t* d) {
     //     dim, dim, &p_one, ha,lda, hb, ldb, &zero,
     //     hc, ldc);
     gemm(data->ha->get_gdata(),data->hb->get_gdata(), data->hc->get_gdata(),
-        data->ha->get_xdim(), data->ha->get_ld(), data->hb->get_ld(), data->hc->get_ld(), stream());
+        data->ha->get_xdim(), data->ha->get_ld(), data->hb->get_ld(), data->hc->get_ld(), stream(), handle());
 
     // std::cout << "mul....." << std::endl;
     // data->hc->copy_from(data->hc->get_cdata(), data->hc->get_gdata(), Runtime::get_instance().get_cpu());
