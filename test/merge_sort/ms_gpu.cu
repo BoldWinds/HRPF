@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <random>
 #include <execution>
+#include <chrono>
 
 const int THRESHOLD = 1024*8;
 
@@ -34,10 +35,6 @@ void gpu_merge_sort(thrust::device_vector<double>& d_vec) {
 
     gpu_merge_sort(left);
     gpu_merge_sort(right);
-
-    thrust::sort(left.begin(), left.end());
-    thrust::sort(right.begin(), right.end());
-
     thrust::merge(left.begin(), left.end(), right.begin(), right.end(), d_vec.begin());
 }
 

@@ -10,12 +10,12 @@ QuicksortProblem::QuicksortProblem(Basedata_t* m_data, Function _cf, Function _g
 }
 
 bool QuicksortProblem::canRunBaseCase(int index) {
-    return m_mask[index] == 1;
+    return false;
 }
 
 bool QuicksortProblem::mustRunBaseCase() {
     auto d = (QuickData_t*)data;
-    return d->ha->length() <= 16;
+    return d->ha->length() <= 1024;
 }
 
 void QuicksortProblem::Input() {

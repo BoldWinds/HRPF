@@ -31,7 +31,7 @@ void StrassenProblem::IO(Basedata_t* m_data) {
 }
 
 bool StrassenProblem::canRunBaseCase(int index){
-    return m_mask[index] == 1;
+    return false;
 }
 
 

@@ -5,7 +5,7 @@
 #endif
 
 #ifndef STREAM_NUM_
-#define STREAM_NUM_  4
+#define STREAM_NUM_  10
 #endif
 
 #ifndef HANDLE_NUM_
@@ -13,11 +13,11 @@
 #endif
 
 #ifndef c_num
-#define c_num  2
+#define c_num  0
 #endif
 
 #ifndef g_num
-#define g_num  1
+#define g_num  10
 #endif
 
 // #ifndef PARALLEL_FOR

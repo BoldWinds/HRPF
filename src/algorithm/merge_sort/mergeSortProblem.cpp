@@ -2,6 +2,7 @@
 #include <cstring>
 #include <algorithm>
 #include <bitset>
+#include <chrono>
 
 MergesortProblem::MergesortProblem(Basedata_t* m_data, Function _cf, Function _gf, Problem* par) {
     data = m_data;
@@ -13,7 +14,8 @@ MergesortProblem::MergesortProblem(Basedata_t* m_data, Function _cf, Function _g
 }
 
 bool MergesortProblem::canRunBaseCase(int index) {
-	return m_mask[index] == 1;
+	//return m_mask[index] == 1;
+    return false;
 }
 
 /***************************
@@ -21,7 +23,7 @@ bool MergesortProblem::canRunBaseCase(int index) {
 ***************************/
 bool MergesortProblem::mustRunBaseCase() {
     auto d = (MergeData_t*)data;
-    return d->ha->length() <= 1;
+    return d->ha->length() <= 1024;
 }
 
 bool cmp(_TYPE x, _TYPE y) {
@@ -49,7 +51,6 @@ void MergesortProblem::IO(Basedata_t* m_data) {
 * cpu sort operation
 ***************************/
 void ms_cpu_sort(Basedata_t* data) {
-	//	std::cout << "cpu sort." << std::endl;
 	auto d = (MergeData_t*)data;
     int m_len = d->ha->length();
     auto m_data = d->ha->get_cdata();
@@ -60,27 +61,10 @@ void ms_cpu_sort(Basedata_t* data) {
 * gpu sort operation
 ***************************/
 void ms_gpu_sort(Basedata_t* data) { 
-	//std::cout << "gpu sort..." << std::endl;
     auto d = (MergeData_t*)data;
     int m_len = d->ha->length();
-    //_TYPE* cdata = new _TYPE[m_len];
 	auto m_data = d->ha->get_gdata();
-    /*
-	cudaMemcpy(cdata, m_data, m_len*sizeof(_TYPE), cudaMemcpyDeviceToHost);
-	for(int i = 0; i < m_len; ++i){
-		std::cout << cdata[i] << " ";
-	}
-	std::cout << std::endl;
-	*/
 	gsort(m_data, m_len, stream());
-	/*
-	cudaMemcpy(cdata, m_data, m_len*sizeof(_TYPE), cudaMemcpyDeviceToHost);
-	for(int i = 0; i < m_len; ++i){
-		std::cout << cdata[i] << " ";
-	}
-	std::cout <<std::endl;
-	delete cdata;
-	*/
 }
 
 /***************************
@@ -117,7 +101,7 @@ void ms_merge_gpu(Basedata_t* data) {
 	int size = len*sizeof(_TYPE);
 	cudaMalloc((void**)&dst_data, size);
 	gmerge(src_dataA, src_dataB, dst_data, lenA, lenB, stream());
-	cudaMemcpy(src_dataA, dst_data, size, cudaMemcpyDeviceToDevice);
+	cudaMemcpyAsync(src_dataA, dst_data, size, cudaMemcpyDeviceToDevice, stream());
 	cudaFree(dst_data);
 }
 

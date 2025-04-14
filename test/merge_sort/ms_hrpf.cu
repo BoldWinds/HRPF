@@ -29,12 +29,8 @@ int main(int argc, char **argv){
     auto cpu = runtime.get_gpu();
     (data)->access(cpu, MemAccess::W);
     loadData(data->get_cdata(), length);
-    // initialize(data, length);
     Framework::init();
     MergesortProblem* problem = new MergesortProblem(new MergeData_t(data), ms_cpu_sort, ms_gpu_sort, nullptr);
-    //std::string mask = "10";
-    //problem->set_mask(mask);
-    // std::cout << "init problem & threads end" << std::endl;
     struct timeval start, end;
     gettimeofday(&start, NULL);
     Framework::solve(problem, interleaving);
@@ -43,13 +39,6 @@ int main(int argc, char **argv){
 
     double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
     std::cout << milliseconds << std::endl;
-    // data->access(Runtime::get_instance().get_cpu(), MemAccess::R);
-    //_TYPE* dd = data->get_cdata();
-
-    // for(int i = 0;  i < length; ++i){
-    // 	std::cout << dd[i] <<" ";
-    // 	if(i&&i % 16 == 0) std::cout << std::endl;
-    // }
 
     delete problem;
     //std::cout << "delete problem..." << std::endl;

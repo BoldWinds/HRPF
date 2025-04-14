@@ -92,7 +92,7 @@ void Framework::wait(Problem *problem) {
 
 void Framework::work(const std::string dev) {
 
-  if (dev == "GPU") {
+//  if (dev == "GPU") {
     /* code */
     auto gpu = Runtime::get_instance().get_gpu();
     std::thread::id id = std::this_thread::get_id();
@@ -120,40 +120,40 @@ void Framework::work(const std::string dev) {
         }
       }
     }
-  } else {
-    auto cpu = Runtime::get_instance().get_cpu();
-    // std::cout << "cpu get" << std::endl;
-    std::thread::id id = std::this_thread::get_id();
-    int index = m_map[id];
-    // std::cout << "xpu index" << index <<
-    // std::endl;Framework::m_helper.m_working
-    while (Framework::m_helper.terminate) {
-      /*******************lock******************/
-      // std::cout << "s:" << Framework::m_helper.m_queue_private[index].size()
-      // << std::endl;
-      if (!Framework::m_helper.m_queue_private[index].empty()) {
-        Problem *task = Framework::m_helper.m_queue_private[index].front();
-        Framework::m_helper.m_queue_private[index].pop_front();
-        task->record_device(cpu);
-        // std::cout << "task->de:" << task->depth << std::endl;
-        Framework::solve(task, task->depth);
-        // std::cout << "cpu solve" << std::endl;
-      } else {
-        std::unique_lock<std::mutex> ul(
-            Framework::m_helper.m_task_mutex[index]);
-        if (!Framework::m_helper.m_task_queue[index].empty()) {
-          Problem *task = Framework::m_helper.m_task_queue[index].front();
-          Framework::m_helper.m_task_queue[index].pop_front();
-          ul.unlock();
-          task->record_device(cpu);
-          Framework::solve(task, task->depth);
-        } else {
-          ul.unlock();
-          work_steal(help_global, index);
-        }
-      }
-    }
-  }
+  // } else {
+  //   auto cpu = Runtime::get_instance().get_cpu();
+  //   // std::cout << "cpu get" << std::endl;
+  //   std::thread::id id = std::this_thread::get_id();
+  //   int index = m_map[id];
+  //   // std::cout << "xpu index" << index <<
+  //   // std::endl;Framework::m_helper.m_working
+  //   while (Framework::m_helper.terminate) {
+  //     /*******************lock******************/
+  //     // std::cout << "s:" << Framework::m_helper.m_queue_private[index].size()
+  //     // << std::endl;
+  //     if (!Framework::m_helper.m_queue_private[index].empty()) {
+  //       Problem *task = Framework::m_helper.m_queue_private[index].front();
+  //       Framework::m_helper.m_queue_private[index].pop_front();
+  //       task->record_device(cpu);
+  //       // std::cout << "task->de:" << task->depth << std::endl;
+  //       Framework::solve(task, task->depth);
+  //       // std::cout << "cpu solve" << std::endl;
+  //     } else {
+  //       std::unique_lock<std::mutex> ul(
+  //           Framework::m_helper.m_task_mutex[index]);
+  //       if (!Framework::m_helper.m_task_queue[index].empty()) {
+  //         Problem *task = Framework::m_helper.m_task_queue[index].front();
+  //         Framework::m_helper.m_task_queue[index].pop_front();
+  //         ul.unlock();
+  //         task->record_device(cpu);
+  //         Framework::solve(task, task->depth);
+  //       } else {
+  //         ul.unlock();
+  //         work_steal(help_global, index);
+  //       }
+  //     }
+  //   }
+  // }
 }
 
 void Framework::solve(Problem *_problem, int _depth) {
@@ -352,7 +352,8 @@ void RANDOM_STREAL(helper &help, std::thread::id tid) {
   // else{
   //     src = rand() % T_SIZE;
   // }
-  src = rand() % c_num;
+  //src = rand() % c_num;
+  src = rand() % T_SIZE;
   if (src == dst)
     return;
 
