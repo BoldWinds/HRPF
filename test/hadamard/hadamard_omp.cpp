@@ -1,38 +1,44 @@
 #include <iostream>
 #include <omp.h>
-#include <stdlib.h>
-#include <sys/time.h>
+#include <random>
+#include <execution>
+#include <chrono>
 
-static int dim ;
+
+void loadData(double *datar, int length) {
+    std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
+
+    std::for_each(std::execution::par_unseq, datar, datar + length, [&](double &val) {
+        val = dist(rng);
+    });
+}
+
+void run(double *a, double *b, double *c, int dim) {
+    #pragma omp parallel for
+    for (int idx = 0; idx < dim * dim; ++idx) {
+        c[idx] = a[idx] * b[idx];
+    }
+}
 
 int main(int argc, char **argv) {
-    dim = std::atoi(argv[1]);
+    int dim = std::atoi(argv[1]);
+    int max_run = std::atoi(argv[2]);
     double *a = new double[dim*dim];
     double *b = new double[dim*dim];
     double *c = new double[dim*dim];
 
-    // initialize
-    for(int i = 0; i < dim; ++i){
-        for(int j = 0; j < dim; ++j) {
-            a[j + i*dim] = (double)(rand() % 100);
-            b[j + i*dim] = (double)(rand() % 100);
-        }
+    double milliseconds = 0;
+    for(int i = 0; i < max_run; ++i){
+        loadData(a, dim*dim);
+        loadData(b, dim*dim);
+        auto start = std::chrono::high_resolution_clock::now();
+        run(a, b, c, dim);
+        auto end = std::chrono::high_resolution_clock::now();
+        milliseconds += std::chrono::duration<double, std::milli>(end - start).count();
     }
-
-    struct timeval start, end;
-    int i,j;
-    gettimeofday(&start, NULL);
-    #pragma omp parallel for simd shared(a,b,c) private(j,i)
-    for( j = 0; j < dim; ++j){
-        for( i = 0; i < dim; ++i)
-        {
-            c[i+j *dim] = a[i+j *dim] * b[i+j *dim];
-        }
-    }
-    gettimeofday(&end, NULL);
-    double milliseconds = (end.tv_sec - start.tv_sec)*1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+    milliseconds /= max_run;
     std::cout << milliseconds << std::endl;
-
     delete [] a;
     delete [] b;
     delete [] c;

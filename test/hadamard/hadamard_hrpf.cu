@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <sys/time.h>
+#include <chrono>
 #include <string>
 #include <omp.h>
 #include "algorithm/parallel_for_zero/parallel_for_zb.h"
@@ -21,6 +21,7 @@ public:
 };
 
 void cfor_func(Basedata_t* data){
+    std::cout << "cfor_func" << std::endl;
     auto d = (loopData_t*)data;
     auto a = ((UserData_t*)(d->buffer))->m_buffer[0]->get_cdata();
     auto b = ((UserData_t*)(d->buffer))->m_buffer[1]->get_cdata();
@@ -33,46 +34,24 @@ void cfor_func(Basedata_t* data){
     
     size_t s_i = d->start;
     size_t e_i = d->end;
+    int dim = e_i - s_i;
     
-    #pragma omp parallel for num_threads(16)
-    for(int i = s_i; i < e_i; ++i){
-        for(int j = 0; j < dim; ++j) {
-            c[i + j * ldc] = a[i + j * lda] * b[i + j * ldb];
-        }
+    #pragma omp parallel for
+    for (int idx = 0; idx < dim * dim; ++idx) {
+        c[idx] = a[idx] * b[idx];
     }
 }
 
-// __global__ void kernel_hadamard(size_t s_i, size_t e_i, size_t cols,
-//     size_t lda, size_t ldb, size_t ldc,
-//     size_t chunk, double* a, double* b, double* c) {
-//     int tid = threadIdx.x + blockIdx.x * blockDim.x;
-
-//     int start_i = s_i + tid * chunk;
-//     int end_i = start_i + chunk < e_i ? start_i + chunk : e_i;
-
-//     for(int i = start_i; i < end_i; ++i){
-//         for(int j = 0; j < cols; ++j) {
-//             c[i + j * ldc] = a[i + j * lda] * b[i + j * ldb];
-//         }
-//     }
-// }
-
-__global__ void kernel_hadamard(double* A, double* B, double* C, int dim) {
-    // Calculate the row and column index for this thread
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    
-    // Check if the indices are within the matrix bounds
-    if (row < dim && col < dim) {
-        // Calculate the linear index
-        int index = row * dim + col;
-        
-        // Perform element-wise multiplication
-        C[index] = A[index] * B[index];
+__global__ void hadamard_product(const double* a, const double* b, double* c, int dim) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < dim*dim) {
+        c[idx] = a[idx] * b[idx];
     }
 }
+
 
 void gfor_func(Basedata_t* data){
+    auto start = std::chrono::high_resolution_clock::now();
     auto d = (loopData_t*)data;
     auto a = ((UserData_t*)(d->buffer))->m_buffer[0]->get_gdata();
     auto b = ((UserData_t*)(d->buffer))->m_buffer[1]->get_gdata();
@@ -85,22 +64,9 @@ void gfor_func(Basedata_t* data){
     size_t s_i = d->start;
     size_t e_i = d->end;
     int dim = e_i - s_i;
-
-    // int blocks_required = 1;
-    // int threads_per_block = 1024;
-    // int chunk_size = 1;
-    // if(size % (threads_per_block * chunk_size)) {
-    //     blocks_required = size / (threads_per_block * chunk_size) + 1;
-    // }
-    // else {
-    //     blocks_required = size / (threads_per_block * chunk_size);
-    // }
-
-    dim3 threadsPerBlock(16, 16);
-    dim3 blocksPerGrid((dim + threadsPerBlock.x - 1) / threadsPerBlock.x, 
-                       (dim + threadsPerBlock.y - 1) / threadsPerBlock.y);
-    cudaStream_t stream_ = stream();
-    kernel_hadamard<<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(a, b, c, dim);
+    int blockSize = 256;
+    int gridSize = (dim*dim + blockSize - 1) / blockSize;
+    hadamard_product<<<gridSize, blockSize, 0, stream()>>>(a, b, c, dim);
 }
 
 
@@ -115,11 +81,10 @@ int main(int argc, char **argv){
     initialize(dim, matrix2);
     initialize(dim, result);
     UserData_t* user = new UserData_t({matrix1, matrix2}, {result});
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
+    auto start = std::chrono::high_resolution_clock::now();
     parallel_for(new loopData_t(0, dim, user), cfor_func, gfor_func);
-    gettimeofday(&end, NULL);
-    double milliseconds = (end.tv_sec - start.tv_sec) * 1000 + 1.0e-3 * (end.tv_usec - start.tv_usec);
+    auto end = std::chrono::high_resolution_clock::now();
+    double milliseconds = std::chrono::duration<double, std::milli>(end - start).count();
     std::cout << milliseconds << std::endl;
     delete user;
     delete matrix1;
